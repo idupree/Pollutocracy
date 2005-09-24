@@ -1,5 +1,5 @@
 
-module Sim{-()-} where
+module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Dir(..), MirrorDir(..), dirAngle) where
 
 import Data.Array
 
