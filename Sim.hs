@@ -10,7 +10,7 @@ type Loc = (Int,Int)
 type Offset = (Int,Int) -- (not) aka dir
 type WorldMap = MapType Loc (Maybe Machine)
 type WorldMovers = [(Loc,Particle)]
-type World = (WorldMap,WorldMovers)
+data World = World { worldMap :: WorldMap, worldParticles :: WorldMovers }
 data Dir = North | East | South | West
 	deriving (Enum)
 data MirrorDir = NW_SE | SW_NE
@@ -95,15 +95,15 @@ simMachine' :: WorldMap -> Array Loc [Particle] -> Loc -> Maybe Machine -> (Mayb
 simMachine' wm pm loc mm = let (res1,res2) = simMachine wm pm loc mm in (res1, map ((,) loc) res2)
 
 simulate :: World -> World
-simulate (worldMap,oldParticles) = let
-	worldBounds = bounds worldMap
+simulate (World oldMap oldParticles) = let
+	worldBounds = bounds oldMap
 	particleArray = accumArray (flip (:)) [] worldBounds
 		$ filter (inRange worldBounds . fst) $ map (particleMove) oldParticles
-	results = map (uncurry (simMachine' worldMap particleArray)) (assocs worldMap)--mapArrayWithIndices (simMachine w particleArray) w
+	results = map (uncurry (simMachine' oldMap particleArray)) (assocs oldMap)--mapArrayWithIndices (simMachine w particleArray) w
 	(machines,newParticle'ss) = unzip results
 	newParticles = concat newParticle'ss
 	newMap = listArray worldBounds machines
-	in (newMap,newParticles)
+	in World newMap newParticles
 
 -- not as generic (in Array) as it could be
 --zipArray :: Ix i => Array i e1 -> Array i e2 -> Array i (e1,e2)

@@ -22,7 +22,7 @@ doDisplay msPerStep worldRef = do
 	--newColor <- liftM4 Color4 (randomRIO (0,1)) (randomRIO (0,1)) (randomRIO (0,1)) (randomRIO (1,1))
 	--clearColor $= newColor
 	--clear [ColorBuffer] -- --make random colors
-	((worldMap,worldParticles),lastUpdateTime) <- readIORef worldRef
+	(Sim.World worldMap worldParticles, lastUpdateTime) <- readIORef worldRef
 	let secondsSinceLastUpdate = fromIntegral (ms - lastUpdateTime) / fromIntegral msPerStep :: GLfloat
 	--print worldMap
 	let ((minX,minY),(maxX,maxY)) = bounds worldMap

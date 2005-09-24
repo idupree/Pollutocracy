@@ -67,12 +67,15 @@ time = bracket getClockTime (\startTime -> do
 
 initialWorld :: RandomGen g => g -> Sim.World
 initialWorld g =
-	(listArray ((0,0),(15,15)) $ map (\r ->
+	Sim.World (
+	    listArray ((0,0),(15,15)) $ map (\r ->
 		if r < 4 then Just $ Sim.Generator (toEnum r) 5
 		else if r < 16 then Just $ Sim.Mirror (toEnum (r `mod` 2)) (r<12) (r>=8)
 		else Nothing
 		) $ randomRs (0,99) g
-	, [])
+	) (
+	    []
+	)
 --Random.split >>> Arrow.first (\g ->
 
 data Flag = MillisecondsPerStep Int
