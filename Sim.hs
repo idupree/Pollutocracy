@@ -86,11 +86,12 @@ simMachine _wm pm loc maybeMachine =
 	Generator dir energy -> if energy >= 5
 		then (Just $ m {m_Energy = energy - 5}, [Particle dir (Energy 4)]) -- pretty efficient generator: 80% efficiency
 		else (Just $ m {m_Energy = m_Energy m + 1 + sum [e | Particle _ (Energy e) <- pHere] }, [])
-	--Mirror {-NW_SE-}{-normalVector-} -> map (\p@(Particle {particleDir=d})->p{particleDir=case d of {North->West; West->North; South->East; East->South}}) pHere
 	Mirror mdir _ _ -> (Just m, map (\p@(Particle pdir ptype) -> if mirrorSilveredWhenGoingDirection m pdir
-		then Particle (mirror mdir pdir) (ptype)
-		else p{- modifyingParticleDir $ mirror mdir-}) pHere)
-  where pHere = pm!loc
+					then Particle (mirror mdir pdir) (ptype)
+					else p{- modifyingParticleDir $ mirror mdir-}) pHere)
+  where
+  	pHere = pm!loc
+
 simMachine' :: WorldMap -> Array Loc [Particle] -> Loc -> Maybe Machine -> (Maybe Machine, [(Loc,Particle)])
 simMachine' wm pm loc mm = let (res1,res2) = simMachine wm pm loc mm in (res1, map ((,) loc) res2)
 
