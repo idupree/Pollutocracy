@@ -7,7 +7,7 @@ import qualified Sim
 import System.Random
 --as Random
 import Control.Monad
-import Data.Array
+import Data.Array.IArray
 --import Data.List(intersperse)
 import Data.Word(Word32)
 import qualified SDL_Constants as SDL
@@ -67,16 +67,19 @@ time = bracket getClockTime (\startTime -> do
 
 initialWorld :: RandomGen g => g -> Sim.World
 initialWorld g =
-	Sim.World (
-	    listArray ((0,0),(15,15)) $ map (\r ->
+	let
+		bound = ((0,0),(15,15))
+	in Sim.World (
+	    listArray bound $ map (\r ->
 		if r < 4 then Just $ Sim.Generator (toEnum r) 5
 		else if r < 16 then Just $ Sim.Mirror (toEnum (r `mod` 2)) (r<12) (r>=8)
 		else Nothing
 		) $ randomRs (0,99) g
 	) (
 	    []
+	) (
+	    listArray bound (repeat 0)
 	)
---Random.split >>> Arrow.first (\g ->
 
 data Flag = MillisecondsPerStep Int
 

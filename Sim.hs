@@ -1,7 +1,9 @@
 
 module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Dir(..), MirrorDir(..), dirAngle) where
 
-import Data.Array
+--import Data.Array
+import Data.Array.Unboxed
+import Data.List (genericLength)
 
 -- .Diff
 type MapType = {-Diff-}Array
@@ -10,9 +12,11 @@ type Loc = (Int,Int)
 type Offset = (Int,Int) -- (not) aka dir
 type WorldMap = MapType Loc (Maybe Machine)
 type WorldMovers = [(Loc,Particle)]
-data World = World { worldMap :: WorldMap, worldParticles :: WorldMovers }
+type Pollution = Double
+type WorldPollution = UArray Loc Pollution
+data World = World { worldMap :: WorldMap, worldParticles :: WorldMovers, worldPollution :: WorldPollution }
 data Dir = North | East | South | West
-	deriving (Enum)
+	deriving (Enum,Bounded)
 data MirrorDir = NW_SE | SW_NE
 	deriving (Enum)
 -- member names:
@@ -75,36 +79,49 @@ mirror SW_NE North = East
 mirror SW_NE East  = North
 mirror SW_NE South = West
 mirror SW_NE West  = South
+orthogonalNeighborLocsWithin :: (Loc,Loc) -> Loc -> [Loc]
+orthogonalNeighborLocsWithin bound center =
+	filter (inRange bound) $ map (flip shift center) [North,East,South,West]
+	
 -- don't yet use a monad; see how this goes
 -- hmm, randomness can wait too
-simMachine :: WorldMap -> Array Loc [Particle] -> Loc -> Maybe Machine -> (Maybe Machine, [Particle])
-simMachine _wm pm loc maybeMachine =
+simMachine :: WorldMap -> Array Loc [Particle] -> WorldPollution -> Loc -> Maybe Machine -> (Maybe Machine, [Particle], Pollution)
+simMachine _wm pm pollutionMap loc maybeMachine =
   case maybeMachine of
-    Nothing -> (Nothing, pHere)
+    Nothing -> (Nothing, pHere, defaultNewPollution)
     (Just m) ->
       case m of
-	Generator dir energy -> if energy >= 5
-		then (Just $ m {m_Energy = energy - 5}, [Particle dir (Energy 4)]) -- pretty efficient generator: 80% efficiency
-		else (Just $ m {m_Energy = m_Energy m + 1 + sum [e | Particle _ (Energy e) <- pHere] }, [])
+	Generator dir energy -> if energy >= 5   -- pretty efficient generator: 80% efficiency
+		then (Just $ m {m_Energy = energy - 5}, [Particle dir (Energy 4)], defaultNewPollution + 1)
+		else (Just $ m {m_Energy = m_Energy m + 1 + sum [e | Particle _ (Energy e) <- pHere] }, [], defaultNewPollution)
 	Mirror mdir _ _ -> (Just m, map (\p@(Particle pdir ptype) -> if mirrorSilveredWhenGoingDirection m pdir
 					then Particle (mirror mdir pdir) (ptype)
-					else p{- modifyingParticleDir $ mirror mdir-}) pHere)
+					else p{- modifyingParticleDir $ mirror mdir-}) pHere, defaultNewPollution)
   where
-  	pHere = pm!loc
+  	pHere = pm ! loc
+	pollutionHere = pollutionMap ! loc  --should edges be dissipated off of? should there be any decrease in total? wind?!
+	defaultNewPollution = let
+			neighborLocs = orthogonalNeighborLocsWithin (bounds pollutionMap) loc
+			neighborPollutions = map (pollutionMap !) neighborLocs
+			pollutionKept = pollutionHere * (1 - transferFraction*genericLength neighborLocs)
+			pollutionTaken = sum $ map (* transferFraction) neighborPollutions
+			transferFraction = 1/16
+		in pollutionKept + pollutionTaken
 
-simMachine' :: WorldMap -> Array Loc [Particle] -> Loc -> Maybe Machine -> (Maybe Machine, [(Loc,Particle)])
-simMachine' wm pm loc mm = let (res1,res2) = simMachine wm pm loc mm in (res1, map ((,) loc) res2)
+simMachine' :: WorldMap -> Array Loc [Particle] -> WorldPollution -> Loc -> Maybe Machine -> (Maybe Machine, [(Loc,Particle)], Pollution)
+simMachine' wm pm polluMap loc mm = let (res1,res2,res3) = simMachine wm pm polluMap loc mm in (res1, map ((,) loc) res2, res3)
 
 simulate :: World -> World
-simulate (World oldMap oldParticles) = let
+simulate (World oldMap oldParticles oldPollution) = let
 	worldBounds = bounds oldMap
 	particleArray = accumArray (flip (:)) [] worldBounds
 		$ filter (inRange worldBounds . fst) $ map (particleMove) oldParticles
-	results = map (uncurry (simMachine' oldMap particleArray)) (assocs oldMap)--mapArrayWithIndices (simMachine w particleArray) w
-	(machines,newParticle'ss) = unzip results
+	results = map (uncurry (simMachine' oldMap particleArray oldPollution)) (assocs oldMap)--mapArrayWithIndices (simMachine w particleArray) w
+	(machines,newParticle'ss,pollutions) = unzip3 results
 	newParticles = concat newParticle'ss
 	newMap = listArray worldBounds machines
-	in World newMap newParticles
+	newPollutions = listArray worldBounds pollutions  -- this assumes pollution and map have same bounds
+	in World newMap newParticles newPollutions
 
 -- not as generic (in Array) as it could be
 --zipArray :: Ix i => Array i e1 -> Array i e2 -> Array i (e1,e2)
