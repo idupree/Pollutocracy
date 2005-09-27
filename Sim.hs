@@ -95,14 +95,15 @@ simMachine _wm pm pollutionMap loc maybeMachine =
     (Just m) ->
       case m of
 	Generator dir energy -> if energy >= 5   -- pretty efficient generator: 80% efficiency
-		then (Just $ m {m_Energy = energy - 5}, [Particle dir (Energy 4)], defaultNewPollution + 1)
-		else (Just $ m {m_Energy = m_Energy m + 1 + sum [e | Particle _ (Energy e) <- pHere] }, [], defaultNewPollution)
+		then (Just $ m {m_Energy = energy - 5 + particleEnergyHere}, [Particle dir (Energy 4)], defaultNewPollution + 1)
+		else (Just $ m {m_Energy = m_Energy m + 1 + particleEnergyHere }, [], defaultNewPollution)
 	Mirror mdir _ _ -> (Just m, map (\p@(Particle pdir ptype) -> if mirrorSilveredWhenGoingDirection m pdir
 					then Particle (mirror mdir pdir) (ptype)
 					else p{- modifyingParticleDir $ mirror mdir-}) pHere, defaultNewPollution)
 	Greenery -> (Just m, pHere, 0)  --a bit powerful pollution remover at the moment
   where
   	pHere = pm ! loc
+	particleEnergyHere = sum [e | Particle _ (Energy e) <- pHere]
 	pollutionHere = pollutionMap ! loc  --should edges be dissipated off of? should there be any decrease in total? wind?!
 	defaultNewPollution = let
 			neighborLocs = orthogonalNeighborLocsWithin (bounds pollutionMap) loc
