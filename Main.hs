@@ -102,7 +102,7 @@ main = do
 	initialWindowSize $= Size 600 600
 	(_programName, args) <- getArgsAndInitialize
 	let (opts, _nonopts, optErrors) = getOpt Permute options args
-	when (not (null optErrors)) (putStrLn "do something smarter than printing this")
+	when (not (null optErrors)) (putStrLn "do something smarter than printing these errors?" >> mapM_ putStrLn optErrors)
 	let msPerStep = case reverse [m | MillisecondsPerStep m <- opts] of
 		(m:_) -> m
 		[] -> defaultMillisecondsPerStep

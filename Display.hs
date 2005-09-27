@@ -10,12 +10,12 @@ import Data.Array.Unboxed
 --import Data.List(intersperse)
 import Data.Word(Word32)
 import Control.Monad(when)
-import FastRoughRNG
+--import FastRoughRNG
 --import Control.Arrow ( (***) )
 --import qualified Data.Array.IO as IOArr
 import System.Time
 import Control.Exception(bracket)
-import ArrayUtils
+import ArrayUtils (arraySize)
 import Foreign.Marshal.Array (withArray)
 import Foreign.Ptr (Ptr)
 foreign import ccall unsafe "foreignPollution" foreignPollution :: Word32 -> Ptr Double -> Word32 -> Word32 -> IO ()
@@ -172,10 +172,7 @@ doDisplay msPerStep worldRef = do
 		-- should it be invisible where really low?
 		--mapM_ (\ (loc,thickness) -> translatingTo loc $ do
 		do
-			let
-				((x1,y1),(x2,y2)) = bounds worldPollution
-				width = x2 - x1 + 1
-				height = y2 - y1 + 1
+			let (width, height) = arraySize worldPollution
 			-- marshalling takes about 1 ms by last measurement
 			withArray (elems worldPollution) (\cArr -> foreignPollution ms cArr (fromIntegral width) (fromIntegral height))
 			{-
