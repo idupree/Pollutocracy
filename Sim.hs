@@ -16,15 +16,17 @@ type Pollution = Double
 type WorldPollution = UArray Loc Pollution
 data World = World { worldMap :: WorldMap, worldParticles :: WorldMovers, worldPollution :: WorldPollution }
 data Dir = North | East | South | West
-	deriving (Enum,Bounded)
+	deriving (Enum,Bounded,Show)
 data MirrorDir = NW_SE | SW_NE
-	deriving (Enum)
+	deriving (Enum,Show)
 -- member names:
 -- `m'nName where n is the initial of the constructor,
 -- or `_' if it may be applicable to multiple constructors
 data Machine
 	= Generator { m_Dir :: Dir, m_Energy :: Int }
 	| Mirror { mMDir :: MirrorDir, mMLeftSilvered, mMRightSilvered :: Bool }
+	| Greenery {  }
+	deriving (Show)
 {-instance Show Machine where
 	show (Generator{}) = "G"
 	show (Mirror{}) = "M"-}
@@ -70,6 +72,7 @@ mirrorSilveredWhenGoingDirection mir@(Mirror {}) dir =
 			North -> mMRightSilvered
 			West -> mMRightSilvered
 	) mir
+mirrorSilveredWhenGoingDirection machine dir = error ( "BUG! mirrorSilveredWhenGoingDirection should not be called with a non-mirror, namely " ++ show machine ++ " (with dir = " ++ show dir ++ ")" )
 mirror :: MirrorDir -> Dir -> Dir
 mirror NW_SE North = West
 mirror NW_SE West  = North
@@ -97,6 +100,7 @@ simMachine _wm pm pollutionMap loc maybeMachine =
 	Mirror mdir _ _ -> (Just m, map (\p@(Particle pdir ptype) -> if mirrorSilveredWhenGoingDirection m pdir
 					then Particle (mirror mdir pdir) (ptype)
 					else p{- modifyingParticleDir $ mirror mdir-}) pHere, defaultNewPollution)
+	Greenery -> (Just m, pHere, 0)  --a bit powerful pollution remover at the moment
   where
   	pHere = pm ! loc
 	pollutionHere = pollutionMap ! loc  --should edges be dissipated off of? should there be any decrease in total? wind?!

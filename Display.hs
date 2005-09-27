@@ -157,7 +157,37 @@ doDisplay msPerStep worldRef = do
 						vertex $ Vertex2 (distFromCenter) (-dist)
 						vertex $ Vertex2 (distFromCenter-silverDepth) (-(dist+silverDepth))
 						vertex $ Vertex2 (-(dist+silverDepth)) (distFromCenter-silverDepth)
+			Sim.Greenery -> do
+				renderPrimitive Polygon $ do
+					color (Color3 0.2 0.9 0.3 :: Color3 GLfloat)
+					vertex $ Vertex2 (-0.3) (0.2 :: GLfloat)
+					vertex $ Vertex2 (0) (distFromCenter)
+					vertex $ Vertex2 (0.3) (0.2 :: GLfloat)
+					vertex $ Vertex2 (0.5) (-0.3 :: GLfloat)
+					vertex $ Vertex2 (0.3) (-0.4 :: GLfloat)
+					vertex $ Vertex2 (0.1) (-0.35 :: GLfloat)
+					vertex $ Vertex2 (-0.1) (-0.35 :: GLfloat)
+					vertex $ Vertex2 (-0.3) (-0.4 :: GLfloat)
+					vertex $ Vertex2 (-0.5) (-0.3 :: GLfloat)
+				renderPrimitive Triangles $ do
+					color (Color3 0.6 0.4 0.3 :: Color3 GLfloat)
+					let trunkWidth = 0.1 :: GLfloat
+					let trunkY = 0.25 :: GLfloat
+					vertex $ Vertex2 (0) (trunkY)
+					vertex $ Vertex2 (trunkWidth) (-distFromCenter)
+					vertex $ Vertex2 (-trunkWidth) (-distFromCenter)
+					let branchTipY = -0.1 :: GLfloat
+					let branchTipX = 0.25 :: GLfloat
+					let branchStartHigh = -0.3 :: GLfloat
+					let branchStartLow = -0.4 :: GLfloat
+					vertex $ Vertex2 (0) (branchStartHigh)
+					vertex $ Vertex2 (branchTipX) (branchTipY)
+					vertex $ Vertex2 (0) (branchStartLow)
 
+					vertex $ Vertex2 (0) (branchStartHigh)
+					vertex $ Vertex2 (-branchTipX) (branchTipY)
+					vertex $ Vertex2 (0) (branchStartLow)
+					
 			{-Sim.Mirror Sim.SW_NE -> do
 				color (Color3 0.9 0.9 0.9 :: Color3 GLfloat)
 				renderPrimitive Quads $ do

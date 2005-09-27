@@ -73,6 +73,7 @@ initialWorld g =
 	    listArray bound $ map (\r ->
 		if r < 4 then Just $ Sim.Generator (toEnum r) 5
 		else if r < 16 then Just $ Sim.Mirror (toEnum (r `mod` 2)) (r<12) (r>=8)
+		else if r < 25 then Just Sim.Greenery
 		else Nothing
 		) $ randomRs (0,99) g
 	) (
