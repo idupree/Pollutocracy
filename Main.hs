@@ -20,6 +20,7 @@ import System.Time
 import Control.Exception(bracket)
 
 import qualified Display(doDisplay, initDisplay)
+import ArrayUtils (arraySize)
 
 foreign import ccall unsafe "SDL.h SDL_Init" sdlInit :: Word32 -> IO ()
 initTimeStuff :: IO ()
@@ -109,6 +110,25 @@ main = do
 		[] -> defaultMillisecondsPerStep
 	let triggerTimer = addTimerCallback msPerStep (doTimedStuff worldRef >> triggerTimer) in triggerTimer
 	idleCallback $= Just (doIdleStuff msPerStep worldRef)
-	createWindow "simulation"; Display.initDisplay; displayCallback $= Display.doDisplay msPerStep worldRef
+	createWindow "simulation"; do
+		Display.initDisplay
+		displayCallback $= Display.doDisplay msPerStep worldRef
+		keyboardMouseCallback $= Just (clickCallback worldRef)
 	mainLoop
+
+clickCallback :: IORef (Sim.World,Word32) -> Key -> KeyState -> Modifiers -> Position -> IO ()
+clickCallback worldRef (MouseButton MiddleButton) Down _mods pos = do
+	--never mind being a useful gui-interface at the moment
+	(x,y) <- positionToZeroOneRange pos  -- annoying. the window could theoretically have been resized by now.
+	(Sim.World machines _particles pollutions, _) <- readIORef worldRef
+	let (width,height) = arraySize machines
+	let loc = (truncate (x * fromIntegral width), truncate (y * fromIntegral height))
+	putStrLn $ show loc ++ ":\n\t" ++ show (machines!loc) ++ "\n\tPollution: " ++ show (pollutions!loc)
+clickCallback _ _ _ _ _ = return ()
+
+positionToZeroOneRange :: Position -> IO (Double,Double)
+positionToZeroOneRange (Position x y) = get viewport >>=
+	\(Position minX minY, Size sizeX sizeY) -> return
+		(fromIntegral (x - minX) / fromIntegral sizeX,
+		 fromIntegral (sizeY - (y - minY) {-stupid GLUT difference of *origin* to OpenGL-}) / fromIntegral sizeY)
 
