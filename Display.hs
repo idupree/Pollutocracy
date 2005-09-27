@@ -123,7 +123,8 @@ doDisplay msPerStep worldRef = do
 					vertex $ Vertex2 ( dist) ( dist)
 					vertex $ Vertex2 (-dist) ( dist)
 					let shortDist = 0.1 :: GLfloat
-					color (Color4 0.0 0.0 0.0 (1 - (fromIntegral energy / 10)) :: Color4 GLfloat)
+					let yellow = fromIntegral energy / 10
+					color (Color3 yellow yellow 0.0 :: Color3 GLfloat)
 					vertex $ Vertex2 (-shortDist) (-shortDist)
 					vertex $ Vertex2 ( dist) (-shortDist)
 					vertex $ Vertex2 ( dist) ( shortDist)
