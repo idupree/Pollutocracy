@@ -97,7 +97,7 @@ simMachine _wm pm pollutionMap loc maybeMachine =
       case m of
 	Generator dir energy -> if energy >= 5   -- pretty efficient generator: 80% efficiency
 		then (Just $ m {m_Energy = energy - 5 + particleEnergyHere}, [Particle dir (Energy 4)], defaultNewPollution + 1)
-		else (Just $ m {m_Energy = m_Energy m + 1 + particleEnergyHere }, [], defaultNewPollution)
+		else (Just $ m {m_Energy = energy + 1 + particleEnergyHere }, [], defaultNewPollution)
 	Mirror mdir _ _ -> (Just m, map (\p@(Particle pdir ptype) -> if mirrorSilveredWhenGoingDirection m pdir
 					then Particle (mirror mdir pdir) (ptype)
 					else p{- modifyingParticleDir $ mirror mdir-}) pHere, defaultNewPollution)
