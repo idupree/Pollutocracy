@@ -9,11 +9,12 @@ import qualified Sim
 import Data.Array.Unboxed
 --import Data.List(intersperse)
 import Data.Word(Word32)
-import Control.Monad(when)
+import Control.Monad(when, unless, liftM2)
 --import FastRoughRNG
 --import Control.Arrow ( (***) )
 --import qualified Data.Array.IO as IOArr
 import System.Time
+import System.Random
 import Control.Exception(bracket)
 import ArrayUtils (arraySize)
 import Foreign.Marshal.Array (withArray)
@@ -108,6 +109,20 @@ doDisplay msPerStep worldRef = do
 					vertex $ Vertex2 ( longDist) (-shortDist)
 					vertex $ Vertex2 ( longDist) ( shortDist)
 					vertex $ Vertex2 (-longDist) ( shortDist)
+			-- could draw this after the machines...
+			Sim.Chaos _rng -> do
+				let
+					io :: IO ()
+					io = do
+						alpha1 <- randomRIO (0.7,1.0)
+						color (Color4 0.7 0.2 0.7 alpha1 :: Color4 GLfloat)
+						let randPos = randomRIO (-0.5, 0.5 :: GLfloat)
+						let randVertex = vertex =<< liftM2 Vertex2 randPos randPos
+						randVertex ; randVertex ; randVertex
+						randVal <- randomRIO (1, 10 :: Int)
+						unless (randVal == 1) io
+				renderPrimitive Triangles $ io
+				
 		  ) worldParticles
 		-- draw the machines
 		--timeL "mach" $ 
@@ -187,7 +202,23 @@ doDisplay msPerStep worldRef = do
 					vertex $ Vertex2 (0) (branchStartHigh)
 					vertex $ Vertex2 (-branchTipX) (branchTipY)
 					vertex $ Vertex2 (0) (branchStartLow)
-					
+			Sim.Storm energy _rng -> do
+				let
+					io :: Double -> Int -> IO ()
+					io amount side = do
+						alpha1 <- randomRIO (0.7,1.0)
+						color (Color4 0.4 0.3 0.7 alpha1 :: Color4 GLfloat)
+						let randPos a b = randomRIO (a, b :: GLfloat)
+						let randVertex = [
+							vertex =<< liftM2 Vertex2 (randPos 0 0.5) (randPos (-0.5) 0.5),
+							vertex =<< liftM2 Vertex2 (randPos (-0.5) 0) (randPos (-0.5) 0.5),
+							vertex =<< liftM2 Vertex2 (randPos (-0.5) 0.5) (randPos 0 0.5),
+							vertex =<< liftM2 Vertex2 (randPos (-0.5) 0.5) (randPos (-0.5) 0)]
+							 !! side
+						randVertex ; randVertex ; randVertex
+						unless (amount < 0) ( io (amount - 1) ( (side + 1) `mod` 4 ) )
+				renderPrimitive Triangles $ io ((energy+2) * 4) 0
+				
 			{-Sim.Mirror Sim.SW_NE -> do
 				color (Color3 0.9 0.9 0.9 :: Color3 GLfloat)
 				renderPrimitive Quads $ do

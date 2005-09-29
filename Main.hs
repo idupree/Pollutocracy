@@ -66,17 +66,23 @@ time = bracket getClockTime (\startTime -> do
 	putStr $ show $ diff; putChar ' '; print (tdPicosec diff `div` 1000000000)
 	return result-}
 
-initialWorld :: RandomGen g => g -> Sim.World
+randomRNGs :: RandomGen g => g -> [g]
+randomRNGs rng = rng1 : randomRNGs rng2
+	where (rng1,rng2) = split rng
+
+
+initialWorld :: StdGen -> Sim.World
 initialWorld g =
 	let
 		bound = ((0,0),(15,15))
 	in Sim.World (
-	    listArray bound $ map (\r ->
+	    listArray bound $ map (\rng -> let (r,rng') = randomR (0,99) rng in
 		if r < 4 then Just $ Sim.Generator (toEnum r) 5
 		else if r < 16 then Just $ Sim.Mirror (toEnum (r `mod` 2)) (r<12) (r>=8)
 		else if r < 25 then Just Sim.Greenery
+		else if r < 27 then Just $ Sim.Storm 2 rng'
 		else Nothing
-		) $ randomRs (0,99) g
+		) $ randomRNGs g
 	) (
 	    []
 	) (

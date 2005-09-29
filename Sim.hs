@@ -27,6 +27,7 @@ data Machine
 	= Generator { m_Dir :: Dir, m_Energy :: Int }
 	| Mirror { mMDir :: MirrorDir, mMLeftSilvered, mMRightSilvered :: Bool }
 	| Greenery {  }
+	| Storm { mSEnergy :: Double, m_RNG :: StdGen }
 	deriving (Show)
 {-instance Show Machine where
 	show (Generator{}) = "G"
@@ -94,7 +95,16 @@ simMachine :: WorldMap -> Array Loc [Particle] -> WorldPollution -> Loc -> Maybe
 simMachine _wm pm pollutionMap loc maybeMachine =
   case maybeMachine of
     Nothing -> (Nothing, pHere, defaultNewPollution)
-    (Just m) ->
+    (Just m) -> let
+    			chaosRNGs = [rng | Particle _ (Chaos rng) <- pHere]
+    			chaoslyRandomMachine :: StdGen -> Machine  -- could also return next g
+			chaoslyRandomMachine rng = let (r,rng') = randomR (0,24) rng in
+				if r < 4 then Generator (toEnum r) 5
+				else if r < 16 then Mirror (toEnum (r `mod` 2)) (r<12) (r>=8)
+				else if r < 20 then Storm (fromIntegral r - 16) rng'
+				else Greenery
+    		in if not (null chaosRNGs) then (Just $ chaoslyRandomMachine $ head chaosRNGs, [], defaultNewPollution + 3)
+	else
       case m of
 	Generator dir energy -> if energy >= 5   -- pretty efficient generator: 80% efficiency
 		then (Just $ m {m_Energy = energy - 5 + particleEnergyHere}, [Particle dir (Energy 4)], defaultNewPollution + 1)
