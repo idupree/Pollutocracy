@@ -31,7 +31,8 @@ data Machine
 	show (Generator{}) = "G"
 	show (Mirror{}) = "M"-}
 data Particle = Particle Dir ParticleType
-data ParticleType = Energy Int  -- where Int strength > 0
+data ParticleType
+	= Energy Int  -- where Int strength > 0
 -- OpenGL uses degrees, and that's what this is used for, so use degrees.
 dirAngle :: Num{-Floating-} a => Dir -> a
 dirAngle East = 0 --0
