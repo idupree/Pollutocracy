@@ -101,7 +101,7 @@ simMachine _wm pm pollutionMap loc maybeMachine =
 	Mirror mdir _ _ -> (Just m, map (\p@(Particle pdir ptype) -> if mirrorSilveredWhenGoingDirection m pdir
 					then Particle (mirror mdir pdir) (ptype)
 					else p{- modifyingParticleDir $ mirror mdir-}) pHere, defaultNewPollution)
-	Greenery -> (Just m, pHere, 0)  --a bit powerful pollution remover at the moment
+	Greenery -> (Just m, pHere, 0)  --a bit powerful pollution remover at the moment, but non-invasive, seems nice in practice
   where
   	pHere = pm ! loc
 	particleEnergyHere = sum [e | Particle _ (Energy e) <- pHere]
