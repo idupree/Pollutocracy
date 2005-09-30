@@ -116,7 +116,7 @@ simMachine _wm pm pollutionMap loc maybeMachine =
   where
   	pHere = pm ! loc
 	particleEnergyHere = sum [e | Particle _ (Energy e) <- pHere]
-	pollutionHere = pollutionMap ! loc  --should edges be dissipated off of? should there be any decrease in total? wind?!
+	pollutionHere = pollutionMap ! loc  --should edges be dissipated off of? should there be any decrease in total? wind?! diagonals?
 	makeRNG = mkStdGen $ (truncate(pollutionHere*1000000)) + (fst loc) + (100000*snd loc)
 	defaultNewPollution = let
 			neighborLocs = orthogonalNeighborLocsWithin (bounds pollutionMap) loc
