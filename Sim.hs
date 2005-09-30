@@ -35,6 +35,7 @@ data Machine
 data Particle = Particle Dir ParticleType
 data ParticleType
 	= Energy Int  -- where Int strength > 0
+	| Chaos StdGen
 -- OpenGL uses degrees, and that's what this is used for, so use degrees.
 dirAngle :: Num{-Floating-} a => Dir -> a
 dirAngle East = 0 --0
@@ -113,6 +114,20 @@ simMachine worldMap particleMap pollutionMap loc maybeMachine =
 					then Particle (mirror mdir pdir) (ptype)
 					else p{- modifyingParticleDir $ mirror mdir-}) pHere, defaultNewPollution)
 	Greenery -> (Just m, pHere, 0)  --a bit powerful pollution remover at the moment, but non-invasive, seems nice in practice
+	Storm energy rng ->
+				if newEnergy > randomVal
+					then (Just $ Storm 0 rng2', [newChaos], newPollution)
+				else if newEnergy < 16
+					then (Just $ Storm newEnergy rng2', [], newPollution)
+				else (Nothing, [newChaos], newPollution + 3)
+		where
+			(rng1,rng2) = split rng
+			newEnergy = energy + fromIntegral particleEnergyHere + pollutionAffect --eating pollution hurts it, spewing helps
+			(rawPollutionAffect,rng2') = randomR (-0.4,0.4) rng2  --how should it affect energy???
+			pollutionAffect = max (-defaultNewPollution) rawPollutionAffect
+			newPollution = pollutionAffect + defaultNewPollution
+			(randomVal,rng1') = randomR (5,17) rng1
+			newChaos = let (dirN,rng'') = randomR (0,3) rng1' in Particle (toEnum dirN) (Chaos rng'')
   where
   	pHere = particleMap ! loc
 	particleEnergyHere = sum [e | Particle _ (Energy e) <- pHere]
