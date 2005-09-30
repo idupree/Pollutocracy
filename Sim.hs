@@ -92,7 +92,7 @@ orthogonalNeighborLocsWithin bound center =
 -- don't yet use a monad; see how this goes
 -- hmm, randomness can wait too
 simMachine :: WorldMap -> Array Loc [Particle] -> WorldPollution -> Loc -> Maybe Machine -> (Maybe Machine, [Particle], Pollution)
-simMachine _wm pm pollutionMap loc maybeMachine =
+simMachine worldMap particleMap pollutionMap loc maybeMachine =
   case maybeMachine of
     Nothing -> (Nothing, pHere, defaultNewPollution)
     (Just m) -> let
@@ -114,7 +114,7 @@ simMachine _wm pm pollutionMap loc maybeMachine =
 					else p{- modifyingParticleDir $ mirror mdir-}) pHere, defaultNewPollution)
 	Greenery -> (Just m, pHere, 0)  --a bit powerful pollution remover at the moment, but non-invasive, seems nice in practice
   where
-  	pHere = pm ! loc
+  	pHere = particleMap ! loc
 	particleEnergyHere = sum [e | Particle _ (Energy e) <- pHere]
 	pollutionHere = pollutionMap ! loc  --should edges be dissipated off of? should there be any decrease in total? wind?! diagonals?
 	makeRNG = mkStdGen $ (truncate(pollutionHere*1000000)) + (fst loc) + (100000*snd loc)
