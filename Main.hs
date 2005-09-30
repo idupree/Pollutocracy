@@ -81,6 +81,7 @@ initialWorld g =
 		else if r < 16 then Just $ Sim.Mirror (toEnum (r `mod` 2)) (r<12) (r>=8)
 		else if r < 25 then Just Sim.Greenery
 		else if r < 27 then Just $ Sim.Storm 2 rng'
+		else if r < 40 then Just Sim.Mountain
 		else Nothing
 		) $ randomRNGs g
 	) (

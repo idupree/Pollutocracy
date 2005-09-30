@@ -218,7 +218,33 @@ doDisplay msPerStep worldRef = do
 						randVertex ; randVertex ; randVertex
 						unless (amount < 0) ( io (amount - 1) ( (side + 1) `mod` 4 ) )
 				renderPrimitive Triangles $ io ((energy+2) * 4) 0
-				
+			Sim.Mountain -> do
+				renderPrimitive Triangles $ do
+					let width = 0.3 :: GLfloat
+					let height = 0.4 :: GLfloat
+					let offsetX = 0.15 :: GLfloat
+					let offsetY = 0.35 :: GLfloat
+					color (Color3 0.45 0.4 0.35 :: Color3 GLfloat)
+					vertex $ Vertex2 ((-width)-offsetX) (offsetY-0.1)
+					vertex $ Vertex2 (-offsetX) (height+offsetY-0.1)
+					vertex $ Vertex2 (width-offsetX) (offsetY-0.1)
+					color (Color3 0.25 0.2 0.15 :: Color3 GLfloat)
+					vertex $ Vertex2 ((-width)+offsetX) (offsetY)
+					vertex $ Vertex2 (offsetX) (height+offsetY)
+					vertex $ Vertex2 (width+offsetX) (offsetY)
+					color (Color3 0.35 0.4 0.45 :: Color3 GLfloat)
+					vertex $ Vertex2 (-width) (0)
+					vertex $ Vertex2 (0) (height)
+					vertex $ Vertex2 (width) (0)
+					color (Color3 0.2 0.2 0.2 :: Color3 GLfloat)
+					vertex $ Vertex2 ((-width)-offsetX) (-offsetY)
+					vertex $ Vertex2 (-offsetX) (height-offsetY)
+					vertex $ Vertex2 (width-offsetX) (-offsetY)
+					color (Color3 0.3 0.4 0.3 :: Color3 GLfloat)
+					vertex $ Vertex2 ((-width)+offsetX) ((-offsetY)+0.05)
+					vertex $ Vertex2 (offsetX) ((height-offsetY)+0.05)
+					vertex $ Vertex2 (width+offsetX) ((-offsetY)+0.05)
+					
 			{-Sim.Mirror Sim.SW_NE -> do
 				color (Color3 0.9 0.9 0.9 :: Color3 GLfloat)
 				renderPrimitive Quads $ do

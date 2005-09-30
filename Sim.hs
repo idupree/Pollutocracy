@@ -28,6 +28,7 @@ data Machine
 	| Mirror { mMDir :: MirrorDir, mMLeftSilvered, mMRightSilvered :: Bool }
 	| Greenery {  }
 	| Storm { mSEnergy :: Double, m_RNG :: StdGen }
+	| Mountain {  }
 	deriving (Show)
 {-instance Show Machine where
 	show (Generator{}) = "G"
@@ -99,11 +100,12 @@ simMachine worldMap particleMap pollutionMap loc maybeMachine =
     (Just m) -> let
     			chaosRNGs = [rng | Particle _ (Chaos rng) <- pHere]
     			chaoslyRandomMachine :: StdGen -> Machine  -- could also return next g
-			chaoslyRandomMachine rng = let (r,rng') = randomR (0,24) rng in
+			chaoslyRandomMachine rng = let (r,rng') = randomR (0,28) rng in
 				if r < 4 then Generator (toEnum r) 5
 				else if r < 16 then Mirror (toEnum (r `mod` 2)) (r<12) (r>=8)
 				else if r < 20 then Storm (fromIntegral r - 16) rng'
-				else Greenery
+				else if r < 25 then Greenery
+				else Mountain  -- should chaos create/destroy MOUNTAINS???
     		in if not (null chaosRNGs) then (Just $ chaoslyRandomMachine $ head chaosRNGs, [], defaultNewPollution + 3)
 	else
       case m of
@@ -128,6 +130,7 @@ simMachine worldMap particleMap pollutionMap loc maybeMachine =
 			newPollution = pollutionAffect + defaultNewPollution
 			(randomVal,rng1') = randomR (5,17) rng1
 			newChaos = let (dirN,rng'') = randomR (0,3) rng1' in Particle (toEnum dirN) (Chaos rng'')
+	Mountain -> (Just m, [], 0)
   where
   	pHere = particleMap ! loc
 	particleEnergyHere = sum [e | Particle _ (Energy e) <- pHere]
@@ -135,8 +138,9 @@ simMachine worldMap particleMap pollutionMap loc maybeMachine =
 	makeRNG = mkStdGen $ (truncate(pollutionHere*1000000)) + (fst loc) + (100000*snd loc)
 	defaultNewPollution = let
 			neighborLocs = orthogonalNeighborLocsWithin (bounds pollutionMap) loc
-			neighborPollutions = map (pollutionMap !) neighborLocs
-			pollutionKept = pollutionHere * (1 - transferFraction*genericLength neighborLocs)
+			significantNeighborLocs = filter (\l -> case worldMap!l of Just Mountain -> False; _ -> True) neighborLocs
+			neighborPollutions = map (pollutionMap !) significantNeighborLocs
+			pollutionKept = pollutionHere * (1 - transferFraction*genericLength significantNeighborLocs)
 			pollutionTaken = sum $ map (* transferFraction) neighborPollutions
 			transferFraction = 1/16
 		in pollutionKept + pollutionTaken
