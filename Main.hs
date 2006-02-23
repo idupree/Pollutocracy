@@ -120,14 +120,14 @@ main = do
 	createWindow "simulation"; do
 		Display.initDisplay
 		displayCallback $= Display.doDisplay msPerStep worldRef
-		keyboardMouseCallback $= Just (clickCallback worldRef)
+		keyboardMouseCallback $= Just (clickCallback (readIORef worldRef))
 	mainLoop
 
-clickCallback :: IORef (Sim.World,Word32) -> Key -> KeyState -> Modifiers -> Position -> IO ()
-clickCallback worldRef (MouseButton MiddleButton) Down _mods pos = do
+clickCallback :: IO (Sim.World,Word32) -> Key -> KeyState -> Modifiers -> Position -> IO ()
+clickCallback getWorld (MouseButton MiddleButton) Down _mods pos = do
 	--never mind being a useful gui-interface at the moment
 	(x,y) <- positionToZeroOneRange pos  -- annoying. the window could theoretically have been resized by now.
-	(Sim.World machines _particles pollutions, _) <- readIORef worldRef
+	(Sim.World machines _particles pollutions, _) <- getWorld
 	let (width,height) = arraySize machines
 	let loc = (truncate (x * fromIntegral width), truncate (y * fromIntegral height))
 	putStrLn $ show loc ++ ":\n\t" ++ show (machines!loc) ++ "\n\tPollution: " ++ show (pollutions!loc)
