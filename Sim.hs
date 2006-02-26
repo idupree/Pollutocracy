@@ -37,21 +37,26 @@ data Particle = Particle Dir ParticleType
 data ParticleType
 	= Energy Int  -- where Int strength > 0
 	| Chaos StdGen
+
 -- OpenGL uses degrees, and that's what this is used for, so use degrees.
 dirAngle :: Num{-Floating-} a => Dir -> a
 dirAngle East = 0 --0
 dirAngle North = 90 --pi * 0.5
 dirAngle West = 180 --pi
 dirAngle South = 270 --pi * 1.5
+
 dirOffset :: Dir -> Offset
 dirOffset North = (0,1)
 dirOffset South = (0,-1)
 dirOffset East = (1,0)
 dirOffset West = (-1,0)
+
 shiftByOffset :: Offset -> Loc -> Loc
 shiftByOffset (dx,dy) (x,y) = (x+dx,y+dy)
+
 shift :: Dir -> Loc -> Loc
 shift = shiftByOffset . dirOffset
+
 particleMove :: (Loc,Particle) -> (Loc,Particle)
 particleMove (loc,p@(Particle dir _)) = (shift dir loc,p)
 --particleMove ((x,y),p@(Particle dir _)) = ((x+dx,y+dy),p)
@@ -61,8 +66,10 @@ particleMove (loc,p@(Particle dir _)) = (shift dir loc,p)
 		South -> (x,y-1)
 		East -> (x+1,y)
 		West -> (x-1,y)-}
+
 modifyingParticleDir :: (Dir -> Dir) -> (Particle -> Particle)
 modifyingParticleDir f (Particle d t) = Particle (f d) t
+
 mirrorSilveredWhenGoingDirection :: Machine{-Mirror-} -> Dir -> Bool
 mirrorSilveredWhenGoingDirection mir@(Mirror {}) dir =
 	(case mMDir mir of
@@ -78,6 +85,7 @@ mirrorSilveredWhenGoingDirection mir@(Mirror {}) dir =
 			West -> mMRightSilvered
 	) mir
 mirrorSilveredWhenGoingDirection machine dir = error ( "BUG! mirrorSilveredWhenGoingDirection should not be called with a non-mirror, namely " ++ show machine ++ " (with dir = " ++ show dir ++ ")" )
+
 mirror :: MirrorDir -> Dir -> Dir
 mirror NW_SE North = West
 mirror NW_SE West  = North
@@ -87,6 +95,7 @@ mirror SW_NE North = East
 mirror SW_NE East  = North
 mirror SW_NE South = West
 mirror SW_NE West  = South
+
 orthogonalNeighborLocsWithin :: (Loc,Loc) -> Loc -> [Loc]
 orthogonalNeighborLocsWithin bound center =
 	filter (inRange bound) $ map (flip shift center) [North,East,South,West]
