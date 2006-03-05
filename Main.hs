@@ -42,7 +42,7 @@ doTimedStuff worldRef = do
 	modifyIORef worldRef (Sim.simulate *** const ms)
 
 doIdleStuff :: Int -> IORef (Sim.World,Word32) -> IO ()
-doIdleStuff msPerStep worldRef = Display.doDisplay msPerStep worldRef --return ()
+doIdleStuff msPerStep worldRef = Display.doDisplay msPerStep (readIORef worldRef) --return ()
 
 {-wastePicoseconds :: Integer -> IO ()
 wastePicoseconds i = do
@@ -119,7 +119,7 @@ main = do
 	idleCallback $= Just (doIdleStuff msPerStep worldRef)
 	createWindow "simulation"; do
 		Display.initDisplay
-		displayCallback $= Display.doDisplay msPerStep worldRef
+		displayCallback $= Display.doDisplay msPerStep (readIORef worldRef)
 		keyboardMouseCallback $= Just (clickCallback (readIORef worldRef))
 	mainLoop
 

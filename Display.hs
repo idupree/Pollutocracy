@@ -3,7 +3,7 @@
 module Display(doDisplay, initDisplay) where
 
 import Graphics.UI.GLUT
-import Data.IORef
+--import Data.IORef
 import qualified Sim
 --as Random
 import Data.Array.Unboxed
@@ -53,13 +53,13 @@ initDisplay = do
 	ortho2D 0 1 0 1
 	blend $= Enabled ; blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
 
-doDisplay :: Int -> IORef (Sim.World,Word32) -> IO ()
-doDisplay msPerStep worldRef = do
+doDisplay :: Int -> IO (Sim.World,Word32) -> IO ()
+doDisplay msPerStep getWorld = do
 	ms <- millisecondsNow
 	--newColor <- liftM4 Color4 (randomRIO (0,1)) (randomRIO (0,1)) (randomRIO (0,1)) (randomRIO (1,1))
 	--clearColor $= newColor
 	--clear [ColorBuffer] -- --make random colors
-	(Sim.World worldMap worldParticles worldPollution, lastUpdateTime) <- readIORef worldRef
+	(Sim.World worldMap worldParticles worldPollution, lastUpdateTime) <- getWorld
 	let secondsSinceLastUpdate = fromIntegral (ms - lastUpdateTime) / fromIntegral msPerStep :: GLfloat
 	--print worldMap
 	let ((minX,minY),(maxX,maxY)) = bounds worldMap
