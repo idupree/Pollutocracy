@@ -27,10 +27,14 @@ void foreignPollution(uint32_t randSeed, const double * pollution, uint32_t poll
 		const uint32_t deterministicHeavinessWidth = pollutionWidth + 2;
 		const uint32_t deterministicHeavinessHeight = pollutionHeight + 2;
 		double * deterministicHeaviness = (double*)alloca(deterministicHeavinessWidth*deterministicHeavinessHeight*sizeof(double));
+		const uint32_t minX = 0;
+		const uint32_t minY = 0;
+		const uint32_t maxX = deterministicHeavinessWidth - 1;
+		const uint32_t maxY = deterministicHeavinessHeight - 1;
 		for(x = 0; x != deterministicHeavinessWidth; ++x) for(y = 0; y != deterministicHeavinessHeight; ++y) {
 			//should probably move in 1 to find border pollution amounts
 			//...but NOT segfault :-)
-			const int is_border = (x == 0 || y == 0 || x == deterministicHeavinessWidth || y == deterministicHeavinessHeight);
+			const int is_border = (x == minX || y == minY || x == maxX || y == maxY);
 			const double pollution_here = (is_border ? 0.0 : AT(pollution,x-1,y-1));
 			//Maybe logarithm-of-pollution? (log ( 1 + pollution_here))
 			AT(deterministicHeaviness,x,y) = pollution_here;
