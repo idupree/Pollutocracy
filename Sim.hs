@@ -1,9 +1,10 @@
 
-module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Dir(..), MirrorDir(..), dirAngle) where
+module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Creature(..), Dir(..), MirrorDir(..), dirAngle) where
 
 --import Data.Array
 import Data.Array.Unboxed
-import Data.List (genericLength)
+import Data.List (genericLength, unzip4)
+import Data.Maybe (isNothing)
 import System.Random
 
 -- .Diff
@@ -13,9 +14,10 @@ type Loc = (Int,Int)
 type Offset = (Int,Int) -- (not) aka dir
 type WorldMap = MapType Loc (Maybe Machine)
 type WorldMovers = [(Loc,Particle)]
+type WorldCreatures = [(Loc,Creature)]
 type Pollution = Double
 type WorldPollution = UArray Loc Pollution
-data World = World { worldMap :: WorldMap, worldParticles :: WorldMovers, worldPollution :: WorldPollution }
+data World = World { worldMap :: WorldMap, worldParticles :: WorldMovers, worldCreatures :: WorldCreatures, worldPollution :: WorldPollution }
 data Dir = North | East | South | West
 	deriving (Enum,Bounded,Show)
 data MirrorDir = NW_SE | SW_NE
@@ -37,6 +39,8 @@ data Particle = Particle Dir ParticleType
 data ParticleType
 	= Energy Int  -- where Int strength > 0
 	| Chaos StdGen
+data Creature = Creature { creatureEnergy :: Double, creatureRNG :: StdGen } --energy system like Angband!.. only normally move every 10, but may communicate quicker
+--don't separate it from the creature   data Brains = Brains { }--creatureMorale :: Double,
 
 -- OpenGL uses degrees, and that's what this is used for, so use degrees.
 dirAngle :: Num{-Floating-} a => Dir -> a
@@ -102,10 +106,13 @@ orthogonalNeighborLocsWithin bound center =
 	
 -- don't yet use a monad; see how this goes
 -- hmm, randomness can wait too
-simMachine :: WorldMap -> Array Loc [Particle] -> WorldPollution -> Loc -> Maybe Machine -> (Maybe Machine, [Particle], Pollution)
-simMachine worldMap particleMap pollutionMap loc maybeMachine =
+simMachine ::
+	WorldMap -> Array Loc [Particle] -> Array Loc [Creature] -> WorldPollution
+	-> Loc -> Maybe Machine
+	-> (Maybe Machine, [Particle], [Creature], Pollution)
+simMachine worldMap particleMap creatureMap pollutionMap loc maybeMachine =
   case maybeMachine of
-    Nothing -> (Nothing, pHere, defaultNewPollution)
+    Nothing -> (Nothing, pHere, cHere, defaultNewPollution)
     (Just m) -> let
     			chaosRNGs = [rng | Particle _ (Chaos rng) <- pHere]
     			chaoslyRandomMachine :: StdGen -> Machine  -- could also return next g
@@ -115,22 +122,22 @@ simMachine worldMap particleMap pollutionMap loc maybeMachine =
 				else if r < 20 then Storm (fromIntegral r - 16) rng'
 				else if r < 25 then Greenery
 				else Mountain  -- should chaos create/destroy MOUNTAINS???
-    		in if not (null chaosRNGs) then (Just $ chaoslyRandomMachine $ head chaosRNGs, [], defaultNewPollution + 3)
+    		in if not (null chaosRNGs) then (Just $ chaoslyRandomMachine $ head chaosRNGs, [], cHere, defaultNewPollution + 3)
 	else
       case m of
 	Generator dir energy -> if energy >= 5   -- pretty efficient generator: 80% efficiency
-		then (Just $ m {m_Energy = energy - 5 + particleEnergyHere}, [Particle dir (Energy 4)], defaultNewPollution + 1)
-		else (Just $ m {m_Energy = energy + 1 + particleEnergyHere }, [], defaultNewPollution)
+		then (Just $ m {m_Energy = energy - 5 + particleEnergyHere}, [Particle dir (Energy 4)], cHere, defaultNewPollution + 1)
+		else (Just $ m {m_Energy = energy + 1 + particleEnergyHere }, [], cHere, defaultNewPollution)
 	Mirror mdir _ _ -> (Just m, map (\p@(Particle pdir ptype) -> if mirrorSilveredWhenGoingDirection m pdir
 					then Particle (mirror mdir pdir) (ptype)
-					else p{- modifyingParticleDir $ mirror mdir-}) pHere, defaultNewPollution)
-	Greenery -> (Just m, pHere, 0)  --a bit powerful pollution remover at the moment, but non-invasive, seems nice in practice
+					else p{- modifyingParticleDir $ mirror mdir-}) pHere, cHere, defaultNewPollution)
+	Greenery -> (Just m, pHere, cHere, 0)  --a bit powerful pollution remover at the moment, but non-invasive, seems nice in practice
 	Storm energy rng ->
 				if newEnergy > randomVal
-					then (Just $ Storm 0 rng2', [newChaos], newPollution)
+					then (Just $ Storm 0 rng2', [newChaos], cHere, newPollution)
 				else if newEnergy < 16
-					then (Just $ Storm newEnergy rng2', [], newPollution)
-				else (Nothing, [newChaos], newPollution + 3)
+					then (Just $ Storm newEnergy rng2', [], cHere, newPollution)
+				else (Nothing, [newChaos], cHere, newPollution + 3)
 		where
 			(rng1,rng2) = split rng
 			newEnergy = energy + fromIntegral particleEnergyHere + pollutionAffect --eating pollution hurts it, spewing helps
@@ -139,9 +146,10 @@ simMachine worldMap particleMap pollutionMap loc maybeMachine =
 			newPollution = pollutionAffect + defaultNewPollution
 			(randomVal,rng1') = randomR (5,17) rng1
 			newChaos = let (dirN,rng'') = randomR (0,3) rng1' in Particle (toEnum dirN) (Chaos rng'')
-	Mountain -> (Just m, [], 0)
+	Mountain -> (Just m, [], cHere, 0)
   where
   	pHere = particleMap ! loc
+	cHere = creatureMap ! loc
 	particleEnergyHere = sum [e | Particle _ (Energy e) <- pHere]
 	pollutionHere = pollutionMap ! loc  --should edges be dissipated off of? should there be any decrease in total? wind?! diagonals?
 	makeRNG = mkStdGen $ (truncate(pollutionHere*1000000)) + (fst loc) + (100000*snd loc)
@@ -154,20 +162,52 @@ simMachine worldMap particleMap pollutionMap loc maybeMachine =
 			transferFraction = 1/16
 		in pollutionKept + pollutionTaken
 
-simMachine' :: WorldMap -> Array Loc [Particle] -> WorldPollution -> Loc -> Maybe Machine -> (Maybe Machine, [(Loc,Particle)], Pollution)
-simMachine' wm pm polluMap loc mm = let (res1,res2,res3) = simMachine wm pm polluMap loc mm in (res1, map ((,) loc) res2, res3)
+simMachine' ::
+	WorldMap -> Array Loc [Particle] -> Array Loc [Creature] -> WorldPollution
+	-> Loc -> Maybe Machine
+	-> (Maybe Machine, [(Loc,Particle)], [(Loc,Creature)], Pollution)
+simMachine' wm pm cm polluMap loc mm =
+	let (res1,res2,res3,res4) = simMachine wm pm cm polluMap loc mm
+	in (res1, map ((,) loc) res2, map ((,) loc) res3, res4)
+
+--creatureMove :: WorldMap -> Array Loc [Particle] -> Array Loc [Creature] -> WorldPollution -> Loc -> [Creature] -> [(Loc,Creature)]
+--creatureMove worldMap particleMap creatureMap pollutionMap loc creatures =
+--	map (creatureMove' worldMap particleMap creatureMap pollutionMap loc) creatures
+
+creatureMove :: WorldMap -> Array Loc [Particle] -> Array Loc [Creature] -> WorldPollution -> Loc -> Creature -> (Loc,Creature)
+creatureMove worldMap particleMap creatureMap pollutionMap loc creature =
+	let (loc', rng') = randomlyShiftLocLimitedly (\l -> inRange (bounds worldMap) l && isNothing (worldMap ! l)) loc (creatureRNG creature)
+	in (loc', Creature { creatureEnergy = creatureEnergy creature, creatureRNG = rng'})
+
+--hmm, may loop infinitely if can't even stay in the same place
+randomlyShiftLocLimitedly :: RandomGen g => (Loc -> Bool) -> Loc -> g -> (Loc, g)
+randomlyShiftLocLimitedly p loc rng =
+	if p loc' then result else randomlyShiftLocLimitedly p loc rng'
+	where result@(loc', rng') = randomlyShiftLoc loc rng
+
+--rather arbitrary now, should it do diagonal movement? what if I want to use hexes sometime?
+randomlyShiftLoc :: RandomGen g => Loc -> g -> (Loc, g)
+randomlyShiftLoc loc@(x,y) rng =
+	let
+		(x', rng') = randomR (x-1, x+1) rng
+		(y', rng'')= randomR (y-1, y+1) rng'
+	in ((x',y'), rng'')
 
 simulate :: World -> World
-simulate (World oldMap oldParticles oldPollution) = let
+simulate (World oldMap oldParticles oldCreatures oldPollution) = let
 	worldBounds = bounds oldMap
 	particleArray = accumArray (flip (:)) [] worldBounds
 		$ filter (inRange worldBounds . fst) $ map (particleMove) oldParticles
-	results = map (uncurry (simMachine' oldMap particleArray oldPollution)) (assocs oldMap)--mapArrayWithIndices (simMachine w particleArray) w
-	(machines,newParticle'ss,pollutions) = unzip3 results
+	oldCreatureArray = accumArray (flip (:)) [] worldBounds oldCreatures
+	newCreatureArray = accumArray (flip (:)) [] worldBounds
+		$ filter (inRange worldBounds . fst) $ map (uncurry (creatureMove oldMap particleArray oldCreatureArray oldPollution)) oldCreatures
+	results = map (uncurry (simMachine' oldMap particleArray newCreatureArray oldPollution)) (assocs oldMap)--mapArrayWithIndices (simMachine w particleArray) w
+	(machines,newParticle'ss,newCreature'ss,pollutions) = unzip4 results
 	newParticles = concat newParticle'ss
+	newCreatures = concat newCreature'ss
 	newMap = listArray worldBounds machines
 	newPollutions = listArray worldBounds pollutions  -- this assumes pollution and map have same bounds
-	in World newMap newParticles newPollutions
+	in World newMap newParticles newCreatures newPollutions
 
 -- not as generic (in Array) as it could be
 --zipArray :: Ix i => Array i e1 -> Array i e2 -> Array i (e1,e2)
