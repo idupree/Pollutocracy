@@ -11,7 +11,6 @@ import Control.Monad
 import Data.Array.IArray
 --import Data.List(intersperse)
 import Data.Word(Word32)
---import qualified SDL_Constants as SDL
 import Data.Bits( (.|.) )
 import Control.Arrow( (***) )
 import System.Console.GetOpt
@@ -24,16 +23,9 @@ import qualified Display(doDisplay, initDisplay)
 import ArrayUtils (arraySize)
 import Clock (millisecondsNow)
 
---foreign import ccall unsafe "SDL.h SDL_Init" sdlInit :: Word32 -> IO ()
+--er. was useful in SDL.
 initTimeStuff :: IO ()
-initTimeStuff = return ()--sdlInit (SDL.init_timer .|. SDL.init_noparachute)
-
--- ought to SDL_Init SDL_INIT_TIMER(a macro :( ) first
--- SDL_INIT_TIMER is a macro so it is only practically accessible from C
--- or is it? -cpp, {-\n#include "SDL.h"\n-}, SDL_INIT_TIMER...
--- since '{-' and '-}' aren't valid C (except inside strings, and it's unlikely
--- especially in a header file, and especially unbalanced ones)
---foreign import ccall unsafe "time/time_init.h initTimeStuff" initTimeStuff :: IO ()
+initTimeStuff = return ()
 
 --type WorldInfo = (Sim.World, ClockTime)
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
+--{-# INCLUDE <SDL.h> #-}
 module Clock (millisecondsNow) where
 import Data.Word (Word32)
 
@@ -16,4 +17,12 @@ timeSpecToMilliseconds t = (fromIntegral (sec t) * 1000) + fromIntegral (nsec t 
 -- (it wants you to use its event loop and catch SDL_Quit)
 -- so, out with da evil sdl!
 --foreign import ccall unsafe {-"SDL.h-} "SDL_GetTicks" millisecondsNow :: IO Word32
+
+--for initializing: although it might need to be combined with other SDL flags
+--if SDL were used for other things "too":
+--import qualified SDL_Constants as SDL
+--foreign import ccall unsafe "SDL.h SDL_Init" sdlInit :: Word32 -> IO ()
+--initTimeStuff :: IO ()
+--initTimeStuff = sdlInit (SDL.init_timer .|. SDL.init_noparachute)
+
 
