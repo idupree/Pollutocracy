@@ -14,44 +14,17 @@ import Control.Monad(when, unless, liftM2)
 --import FastRoughRNG
 --import Control.Arrow ( (***) )
 --import qualified Data.Array.IO as IOArr
-import System.Time
 import System.Random
-import Control.Exception(bracket)
 import ArrayUtils (arraySize)
 import Foreign.Marshal.Array (withArray)
 import Foreign.Ptr (Ptr)
 import Unsafe.Coerce (unsafeCoerce) --lame...
 foreign import ccall unsafe "foreignPollution" foreignPollution :: Word32 -> Ptr Double -> Word32 -> Word32 -> IO ()
-time' :: String -> IO a -> IO a
-time' str = bracket getClockTime (\startTime -> do
-		endTime <- getClockTime
-		let diff = diffClockTimes endTime startTime
-		putStr str
-		putStr $ show $ tdPicosec diff `div` 1000000000
-		putChar '.'; putStr $ tail $ show $ 10000 + (tdPicosec diff `div` 1000000)
-		--putChar '.'; putStr $ show $ tdPicosec diff `div` 1000000 `mod` 1000; 
-		putStr " ms  {"; putStr $ drop 60 $ show $ diff; putChar '\n'
-	) . const
-
-time :: IO a -> IO a
-time = time' ""
-
--- L for Label
-timeL :: String -> IO a -> IO a
-timeL str = time' (str++": ")
-
-computeArray :: (Ix i, IArray UArray a) => (i,i) -> IO a -> IO (UArray i a)
-computeArray ixs io = do
-	rs <- sequence $ replicate (rangeSize ixs) io
-	return $ listArray ixs rs
-	--arr <- newArray_ ixs
-	--mapM IOArr.writeArray arr 
-	
 
 --since realToFrac and that crap, and non-exposed newtype
 randomRIOGLF :: (Float, Float) -> IO GLfloat
-randomRIOGLF range = do
-  result <- randomRIO range
+randomRIOGLF range_ = do
+  result <- randomRIO range_
   return (unsafeCoerce result)
 
 initDisplay :: IO ()
@@ -102,7 +75,7 @@ doDisplay msPerStep getWorld = do
 		  ) $ assocs worldMap
 		-- draw the creatures (what about multiple creatures in the same place?)
 		--timeL "cret" $ 
-		mapM_ (\ (loc, Sim.Creature { Sim.creatureEnergy = energy, Sim.creatureRNG = creatureRNG }) -> translatingTo loc $ do
+		mapM_ (\ (loc, Sim.Creature { Sim.creatureEnergy = energy{-, Sim.creatureRNG = creatureRNG-} }) -> translatingTo loc $ do
 			renderPrimitive Quads $ do
 				let legSpread = 0.35 :: GLfloat
 				let legHeight = -0.4 :: GLfloat
@@ -299,108 +272,7 @@ doDisplay msPerStep getWorld = do
 			let (width, height) = arraySize worldPollution
 			-- marshalling takes about 1 ms by last measurement
 			withArray (elems worldPollution) (\cArr -> foreignPollution ms cArr (fromIntegral width) (fromIntegral height))
-			{-
-			--rng1 <- newStdGen
-			--rng2 <- newStdGen
-			let xDensity, yDensity :: Num a => a; xDensity = 2; yDensity = 2
-			--let maxReasonableXDeviation = (recip xDensity) / 2; maxReasonableYDeviation = (recip yDensity) / 2
-			--let xDeviation = maxReasonableXDeviation / 2; yDeviation = maxReasonableYDeviation / 2
-			let ((_wpx1,_wpy1),(wpx2,wpy2)) = bounds worldPollution  -- (_wpx1,_wpy1) is assumed to be (0,0)
-			let startingIndexRange@(_,(sIRx,sIRy)) = ((0,0),((wpx2 + 1) * xDensity - 1, (wpy2 + 1) * yDensity - 1))
-		--	let allIndexRange = ((0,0),(sIRx + 1, sIRy + 1))
-			
-			--let rng = MkFastRoughRNG (fromIntegral ms)
-			rng <- newIORef (MkFastRoughRNG (fromIntegral ms))
-			--xJiggles <- computeArray ((0,0),allIndexRange) (return 0{-randomRIO (-xDeviation, xDeviation)-}) :: IO (UArray (Int,Int) GLfloat)
-			--yJiggles <- computeArray ((0,0),allIndexRange) (return 0{-randomRIO (-yDeviation, yDeviation)-}) :: IO (UArray (Int,Int) GLfloat)
-			--let xJiggles = listArray ((0,0),allIndexRange) (
-			--	randomRs (-xDeviation, xDeviation) rng1
-			--      ) :: UArray (Int,Int) GLfloat
-			--let yJiggles = listArray ((0,0),allIndexRange) (
-			--	randomRs (-yDeviation, yDeviation) rng2
-			--      ) :: UArray (Int,Int) GLfloat
-		--	eval (xJiggles!(0,0)); eval (yJiggles!(0,0))
-{-			let deterministicHeavinesses = amap (log . (1 +)) worldPollution
-			let (rawHeavinesses, rng') = randomFloatingArray2 allIndexRange rng
-			let heavinesses = amapWithIxs (\loc@(x,y) h -> if inRange startingIndexRange loc
-							then h * deterministicHeavinesses ! (x `div` xDensity, y `div` yDensity)
-							else 0)
-						rawHeavinesses
--}			{-let (rawHeavinesses, rng') = randomFloatingList (rangeSize allIndexRange) rng
-			timeL "rand" (eval_ rng')
-			let heavinesses = array allIndexRange [(loc, 
-				if inRange startingIndexRange loc then h * deterministicHeavinesses ! (x `div` xDensity, y `div` yDensity)
-				else 0 )
-						| (loc@(x,y),h) <- zip (range allIndexRange) rawHeavinesses] :: UArray (Int,Int) Double-}
-			scale (recip xDensity) (recip yDensity :: GLfloat) 1
-			renderPrimitive Quads $ mapM_ (\ (x,y) -> do
-				let maxP = log $ 1 + worldPollution ! (x `div` xDensity, y `div` yDensity) {-:: GLfloat-}
-				rng'1 <- readIORef rng
-				let (heaviness1, rng'2) = roughFloatingRange (0, maxP) rng'1
-				let (heaviness2, rng'3) = roughFloatingRange (0, maxP) rng'2
-				let (heaviness3, rng'4) = roughFloatingRange (0, maxP) rng'3
-				let (heaviness4, rng'5) = roughFloatingRange (0, maxP) rng'4
-				writeIORef rng rng'5
-				
-				{-let
-					heaviness1 = heavinesses ! (x  , y  )
-					heaviness2 = heavinesses ! (x+1, y  )
-					heaviness3 = heavinesses ! (x+1, y+1)
-					heaviness4 = heavinesses ! (x  , y+1)-}
-				case fromIntegral x :: GLfloat of
-				 x' -> case fromIntegral y :: GLfloat of
-				  y' -> do --eval_ x'; eval_ y'; eval_ heaviness1; eval_ heaviness2; eval_ heaviness3; eval_ heaviness4{-
-				   color $ Color4 0.5 0.5 0.5 heaviness1; vertex $ Vertex2 (x'-0.5) (y'-0.5)
-				   color $ Color4 0.5 0.5 0.5 heaviness2; vertex $ Vertex2 (x'+0.5) (y'-0.5)
-				   color $ Color4 0.5 0.5 0.5 heaviness3; vertex $ Vertex2 (x'+0.5) (y'+0.5)
-				   color $ Color4 0.5 0.5 0.5 heaviness4; vertex $ Vertex2 (x'-0.5) (y'+0.5) --}
 
-				{-timeL "base" (return ())
-				timeL "prep" (do eval x; eval xDensity; eval y; eval yDensity)
-				let maxP = {-realToFrac $-} log $ 1 + worldPollution ! (x `div` xDensity, y `div` yDensity) {-:: GLfloat-}
-				timeL "maxP" (eval maxP)
-				rng' <- timeL "read" (readIORef rng)
-				let (heaviness, rng'') = roughFloatingRange{-randomR-} (0, maxP) rng'
-				timeL "calc" (eval heaviness >> eval rng'')
-				timeL "writ" (writeIORef rng rng'')
-				-}
-				{-heaviness <- timeL "all!" (do
-					let maxP = {-realToFrac $-} log $ 1 + worldPollution ! (x `div` xDensity, y `div` yDensity) {-:: GLfloat-}
-					rng' <- readIORef rng
-					let (heaviness, rng'') = roughFloatingRange{-randomR-} (0, maxP) rng'
-					writeIORef rng rng''
-					eval heaviness
-				 )-}
-				{-let maxP = 1 --{-realToFrac $-} {-log $ 1 +-} worldPollution ! (x `div` xDensity, y `div` yDensity) {-:: GLfloat-}
-				rng' <- readIORef rng
-				let (heaviness, rng'') = roughFloatingRange{-randomR-} (0, maxP) rng'
-				writeIORef rng rng''
-				eval heaviness
-				--heaviness <- randomRIO (0, realToFrac $ log $ 1 +
-				--	worldPollution ! (x `div` xDensity, y `div` yDensity)
-				--  ) :: IO GLfloat
-				--let heaviness = realToFrac $ log $ 1 +
-				--	worldPollution ! (x `div` xDensity, y `div` yDensity)
-				color (Color4 0.5 0.5 0.5 (realToFrac heaviness :: GLfloat){- :: Color4 GLfloat-})-}
-				--let (x',y') = (fromIntegral x :: GLfloat, fromIntegral y :: GLfloat)
-				--eval x; eval y; eval x'; eval y'; eval (xJiggles!(0,0)); eval (yJiggles!(0,0))
-				--return ()
-				
-
-
-				
-				--color (Color4 0.5 0.5 0.5 0.5 :: Color4 GLfloat)
-				
-				--vertex $ Vertex2 ((x'-0.5)/5 + xJiggles ! (x  , y  )) ((y'-0.5)/5 + yJiggles ! (x  , y  ))
-				--vertex $ Vertex2 ((x'+0.5)/5 + xJiggles ! (x+1, y  )) ((y'-0.5)/5 + yJiggles ! (x+1, y  ))
-				--vertex $ Vertex2 ((x'+0.5)/5 + xJiggles ! (x+1, y+1)) ((y'+0.5)/5 + yJiggles ! (x+1, y+1))
-				--vertex $ Vertex2 ((x'-0.5)/5 + xJiggles ! (x  , y+1)) ((y'+0.5)/5 + yJiggles ! (x  , y+1))
-			  ) $ range startingIndexRange-}
 	swapBuffers
 	reportErrors
-
-eval :: a -> IO a
-eval a = a `seq` return a
-eval_ :: a -> IO ()
-eval_ a = a `seq` return ()
 

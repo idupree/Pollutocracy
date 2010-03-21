@@ -11,13 +11,9 @@ import Control.Monad
 import Data.Array.IArray
 --import Data.List(intersperse)
 import Data.Word(Word32)
-import Data.Bits( (.|.) )
 import Control.Arrow( (***) )
 import System.Console.GetOpt
 --import Data.Maybe(listToMaybe)
--- these are used for 'time'
-import System.Time
-import Control.Exception(bracket)
 
 import qualified Display(doDisplay, initDisplay)
 import ArrayUtils (arraySize)
@@ -36,28 +32,6 @@ doTimedStuff worldRef = do
 
 doIdleStuff :: Int -> IORef (Sim.World,Word32) -> IO ()
 doIdleStuff msPerStep worldRef = Display.doDisplay msPerStep (readIORef worldRef) --return ()
-
-{-wastePicoseconds :: Integer -> IO ()
-wastePicoseconds i = do
-	startTime <- getClockTime
-	let wasteMore = do
-			thisTime <- getClockTime  --do picoseconds include everything?
-			when (tdPicosec (diffClockTimes thisTime startTime) < i) wasteMore
-		in wasteMore
--}
-time :: IO a -> IO a
-time = bracket getClockTime (\startTime -> do
-		endTime <- getClockTime
-		let diff = diffClockTimes endTime startTime
-		putStr $ show $ diff; putChar ' '; print (tdPicosec diff `div` 1000000000)
-	) . const
-{-time io = do
-	startTime <- getClockTime
-	result <- io
-	endTime <- getClockTime
-	let diff = diffClockTimes endTime startTime
-	putStr $ show $ diff; putChar ' '; print (tdPicosec diff `div` 1000000000)
-	return result-}
 
 randomRNGs :: RandomGen g => g -> [g]
 randomRNGs rng = rng1 : randomRNGs rng2
@@ -112,7 +86,7 @@ main = do
 		[] -> defaultMillisecondsPerStep
 	let triggerTimer = addTimerCallback msPerStep (doTimedStuff worldRef >> triggerTimer) in triggerTimer
 	idleCallback $= Just (doIdleStuff msPerStep worldRef)
-	createWindow "simulation"; do
+	_window <- createWindow "simulation"; do
 		Display.initDisplay
 		displayCallback $= Display.doDisplay msPerStep (readIORef worldRef)
 		keyboardMouseCallback $= Just (clickCallback (readIORef worldRef))
