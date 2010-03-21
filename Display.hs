@@ -20,6 +20,7 @@ import Control.Exception(bracket)
 import ArrayUtils (arraySize)
 import Foreign.Marshal.Array (withArray)
 import Foreign.Ptr (Ptr)
+import Unsafe.Coerce (unsafeCoerce) --lame...
 foreign import ccall unsafe "foreignPollution" foreignPollution :: Word32 -> Ptr Double -> Word32 -> Word32 -> IO ()
 time' :: String -> IO a -> IO a
 time' str = bracket getClockTime (\startTime -> do
@@ -47,7 +48,11 @@ computeArray ixs io = do
 	--mapM IOArr.writeArray arr 
 	
 
-foreign import ccall unsafe {-"SDL.h-} "SDL_GetTicks" millisecondsNow :: IO Word32
+--since realToFrac and that crap, and non-exposed newtype
+randomRIOGLF :: (Float, Float) -> IO GLfloat
+randomRIOGLF range = do
+  result <- randomRIO range
+  return (unsafeCoerce result)
 
 initDisplay :: IO ()
 initDisplay = do
@@ -57,7 +62,7 @@ initDisplay = do
 doDisplay :: Int -> IO (Sim.World,Word32) -> IO ()
 doDisplay msPerStep getWorld = do
 	ms <- millisecondsNow
-	--newColor <- liftM4 Color4 (randomRIO (0,1)) (randomRIO (0,1)) (randomRIO (0,1)) (randomRIO (1,1))
+	--newColor <- liftM4 Color4 (randomRIOGLF (0,1)) (randomRIOGLF (0,1)) (randomRIOGLF (0,1)) (randomRIOGLF (1,1))
 	--clearColor $= newColor
 	--clear [ColorBuffer] -- --make random colors
 	(Sim.World worldMap worldParticles worldCreatures worldPollution, lastUpdateTime) <- getWorld
@@ -145,9 +150,9 @@ doDisplay msPerStep getWorld = do
 				let
 					io :: IO ()
 					io = do
-						alpha1 <- randomRIO (0.7,1.0)
+						alpha1 <- randomRIOGLF (0.7,1.0)
 						color (Color4 0.7 0.2 0.7 alpha1 :: Color4 GLfloat)
-						let randPos = randomRIO (-0.5, 0.5 :: GLfloat)
+						let randPos = randomRIOGLF (-0.5, 0.5)
 						let randVertex = vertex =<< liftM2 Vertex2 randPos randPos
 						randVertex ; randVertex ; randVertex
 						randVal <- randomRIO (1, 10 :: Int)
@@ -237,9 +242,9 @@ doDisplay msPerStep getWorld = do
 				let
 					io :: Double -> Int -> IO ()
 					io amount side = do
-						alpha1 <- randomRIO (0.7,1.0)
+						alpha1 <- randomRIOGLF (0.7,1.0)
 						color (Color4 0.4 0.3 0.7 alpha1 :: Color4 GLfloat)
-						let randPos a b = randomRIO (a, b :: GLfloat)
+						let randPos a b = randomRIOGLF (a, b)
 						let randVertex = [
 							vertex =<< liftM2 Vertex2 (randPos 0 0.5) (randPos (-0.5) 0.5),
 							vertex =<< liftM2 Vertex2 (randPos (-0.5) 0) (randPos (-0.5) 0.5),

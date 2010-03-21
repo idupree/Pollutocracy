@@ -140,5 +140,5 @@ positionToZeroOneRange :: Position -> IO (Double,Double)
 positionToZeroOneRange (Position x y) = get viewport >>=
 	\(Position minX minY, Size sizeX sizeY) -> return
 		(fromIntegral (x - minX) / fromIntegral sizeX,
-		 fromIntegral (sizeY - (y - minY) {-stupid GLUT difference of *origin* to OpenGL-}) / fromIntegral sizeY)
+		 fromIntegral (fromIntegral sizeY - (y - minY) {-stupid GLUT difference of *origin* to OpenGL-}) / fromIntegral sizeY)
 
