@@ -6,6 +6,7 @@ module Display(doDisplay, initDisplay) where
 import Graphics.UI.GLUT
 --import Data.IORef
 import qualified Sim
+import Clock (millisecondsNow)
 --as Random
 import Data.Array.Unboxed
 --import Data.List(intersperse)

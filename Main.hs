@@ -22,11 +22,11 @@ import Control.Exception(bracket)
 
 import qualified Display(doDisplay, initDisplay)
 import ArrayUtils (arraySize)
+import Clock (millisecondsNow)
 
 foreign import ccall unsafe "SDL.h SDL_Init" sdlInit :: Word32 -> IO ()
 initTimeStuff :: IO ()
 initTimeStuff = sdlInit (SDL.init_timer .|. SDL.init_noparachute)
-foreign import ccall unsafe "SDL.h SDL_GetTicks" millisecondsNow :: IO Word32
 
 -- ought to SDL_Init SDL_INIT_TIMER(a macro :( ) first
 -- SDL_INIT_TIMER is a macro so it is only practically accessible from C
