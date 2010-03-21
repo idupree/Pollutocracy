@@ -9,9 +9,9 @@
 void foreignPollution(uint32_t randSeed, const double * pollution, uint32_t pollutionWidth, uint32_t pollutionHeight) {
 	uint32_t x, y;
 	#define AT(array,x,y) ( (array)[((x)*(array##Height))+((y))] )
-	#define RAND() ( randSeed = (((randSeed * 1103515245) + 12345) & 0x7fffffff) )
-	#define RAND_FLOAT_UP_TO(hi) ( (double)RAND() * (hi) / 0x7fffffff )
-	#define RAND_FLOAT_BETWEEN(lo,hi) ( (lo) + (double)RAND() * ((hi)-(lo)) / 0x7fffffff )
+	#define RAND() ( randSeed = (((randSeed * 1103515245u) + 12345u) & 0x7fffffffu) )
+	#define RAND_FLOAT_UP_TO(hi) ( (double)RAND() * (hi) / 0x7fffffffu )
+	#define RAND_FLOAT_BETWEEN(lo,hi) ( (lo) + (double)RAND() * ((hi)-(lo)) / 0x7fffffffu )
 	/*for(x = 0; x != width; ++x) {
 		for(y = 0; y != height; ++y) {
 			int got = AT(pollution,x,y);
@@ -29,11 +29,11 @@ void foreignPollution(uint32_t randSeed, const double * pollution, uint32_t poll
 		double * deterministicHeaviness = (double*)alloca(deterministicHeavinessWidth*deterministicHeavinessHeight*sizeof(double));
 		for(x = 0; x != deterministicHeavinessWidth; ++x) for(y = 0; y != deterministicHeavinessHeight; ++y) {
 			//should probably move in 1 to find border pollution amounts
-			AT(deterministicHeaviness,x,y) = (
-				(x == 0 || y == 0 || x == deterministicHeavinessWidth || y == deterministicHeavinessHeight) ?
-					0 :
-					/*log(1 +*/ AT(pollution,x-1,y-1)/*)*/
-			);
+			//...but NOT segfault :-)
+			const int is_border = (x == 0 || y == 0 || x == deterministicHeavinessWidth || y == deterministicHeavinessHeight);
+			const double pollution_here = (is_border ? 0.0 : AT(pollution,x-1,y-1));
+			//Maybe logarithm-of-pollution? (log ( 1 + pollution_here))
+			AT(deterministicHeaviness,x,y) = pollution_here;
 		}
 		const uint32_t drawnWidth = pollutionWidth * 3 + 1;
 		const uint32_t drawnHeight = pollutionHeight * 3 + 1;
