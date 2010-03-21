@@ -6,9 +6,10 @@ mkdir build
 cp *.hs *.hsc *.c *.h build
 cd build
 
-hsc2hs -I/usr/include/SDL/ *.hsc
+#hsc2hs -I/usr/include/SDL/ *.hsc
 gcc -c -I/usr/include/ -O3 -pipe -time -Wall foreignPollution.c
-ghc -c -I/usr/include/SDL/ -Wall --make Main.hs "$@"
+ghc -c -Wall --make Main.hs "$@"
 echo 'Linking...'
-ghc -o game -package GLUT -lGL -lGLU -lglut -lSDL -lm *.o "$@"
+#no -lSDL
+ghc -o game -package clock -package GLUT -lGL -lGLU -lglut -lm *.o "$@"
 

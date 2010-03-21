@@ -11,7 +11,7 @@ import Control.Monad
 import Data.Array.IArray
 --import Data.List(intersperse)
 import Data.Word(Word32)
-import qualified SDL_Constants as SDL
+--import qualified SDL_Constants as SDL
 import Data.Bits( (.|.) )
 import Control.Arrow( (***) )
 import System.Console.GetOpt
@@ -24,9 +24,9 @@ import qualified Display(doDisplay, initDisplay)
 import ArrayUtils (arraySize)
 import Clock (millisecondsNow)
 
-foreign import ccall unsafe "SDL.h SDL_Init" sdlInit :: Word32 -> IO ()
+--foreign import ccall unsafe "SDL.h SDL_Init" sdlInit :: Word32 -> IO ()
 initTimeStuff :: IO ()
-initTimeStuff = sdlInit (SDL.init_timer .|. SDL.init_noparachute)
+initTimeStuff = return ()--sdlInit (SDL.init_timer .|. SDL.init_noparachute)
 
 -- ought to SDL_Init SDL_INIT_TIMER(a macro :( ) first
 -- SDL_INIT_TIMER is a macro so it is only practically accessible from C

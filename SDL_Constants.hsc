@@ -1,5 +1,5 @@
 module SDL_Constants where
-
+--currently unused...
 import Data.Word(Word32)
 
 #include "SDL.h"
