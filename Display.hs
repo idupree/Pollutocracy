@@ -1,3 +1,4 @@
+{-# LANGUAGE ForeignFunctionInterface, FlexibleContexts #-}
 {-# INCLUDE <SDL.h> #-}
 {-# INCLUDE "foreignPollution.h" #-}
 module Display(doDisplay, initDisplay) where
