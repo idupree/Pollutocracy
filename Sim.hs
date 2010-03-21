@@ -1,5 +1,5 @@
 
-module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Creature(..), Dir(..), MirrorDir(..), dirAngle) where
+module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Creature(..), Dir(..), MirrorDir(..), dirAngle, WorldHour(..){-hmm-}) where
 
 --import Data.Array
 import Data.Array.Unboxed
@@ -18,7 +18,8 @@ type WorldMovers = SparseMultiMap Particle
 type WorldCreatures = SparseMultiMap Creature
 type Pollution = Double
 type WorldPollution = UArray Loc Pollution
-data World = World { worldMap :: WorldMap, worldParticles :: WorldMovers, worldCreatures :: WorldCreatures, worldPollution :: WorldPollution }
+newtype WorldHour = WorldHour Int
+data World = World { worldMap :: WorldMap, worldParticles :: WorldMovers, worldCreatures :: WorldCreatures, worldPollution :: WorldPollution, worldHour :: WorldHour }
 data Dir = North | East | South | West
 	deriving (Enum,Bounded,Show)
 data MirrorDir = NW_SE | SW_NE
@@ -200,7 +201,7 @@ randomlyShiftLoc loc@(x,y) rng =
 	in ((x',y'), rng'')
 
 simulate :: World -> World
-simulate (World oldMap oldParticles oldCreatures oldPollution) = let
+simulate (World oldMap oldParticles oldCreatures oldPollution oldHour) = let
 	worldBounds = bounds oldMap
 	particleArray = accumArray (flip (:)) [] worldBounds
 		$ filter (inRange worldBounds . fst) $ map (particleMove) oldParticles
@@ -213,7 +214,20 @@ simulate (World oldMap oldParticles oldCreatures oldPollution) = let
 	newCreatures = concat newCreature'ss
 	newMap = listArray worldBounds machines
 	newPollutions = listArray worldBounds pollutions  -- this assumes pollution and map have same bounds
-	in World newMap newParticles newCreatures newPollutions
+        newHour = hourMove oldHour
+	in World newMap newParticles newCreatures newPollutions newHour
+
+
+
+hourMove :: WorldHour -> WorldHour
+hourMove (WorldHour oldN) =
+  let newN = oldN + 1 in
+  if newN < dayLength
+  then WorldHour newN
+  else WorldHour (newN - dayLength)
+
+dayLength :: Int
+dayLength = 24
 
 -- not as generic (in Array) as it could be
 --zipArray :: Ix i => Array i e1 -> Array i e2 -> Array i (e1,e2)

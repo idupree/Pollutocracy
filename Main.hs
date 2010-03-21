@@ -57,6 +57,8 @@ initialWorld g =
 	    [((6,6), Sim.Creature 4 g)]
 	) (
 	    listArray bound (repeat 0)
+	) (
+	    Sim.WorldHour 0
 	)
 
 data Flag = MillisecondsPerStep Int
@@ -84,8 +86,16 @@ main = do
 	let msPerStep = case reverse [m | MillisecondsPerStep m <- opts] of
 		(m:_) -> m
 		[] -> defaultMillisecondsPerStep
-	let triggerTimer = addTimerCallback msPerStep (doTimedStuff worldRef >> triggerTimer) in triggerTimer
-	idleCallback $= Just (doIdleStuff msPerStep worldRef)
+	(let triggerTimer = addTimerCallback msPerStep (doTimedStuff worldRef >> triggerTimer)
+         in triggerTimer)
+--noooo! don't redisplay at 600framespersecond just because you can!
+--	idleCallback $= Just (doIdleStuff msPerStep worldRef)
+--	let's say we want 30 fps, way faster than anything changes anyway
+--	1000ms / 30 approx= 30
+	(let redisplayTimer = addTimerCallback 30 (doIdleStuff msPerStep worldRef >> redisplayTimer)
+	 in redisplayTimer)
+	actionOnWindowClose $= MainLoopReturns
+	-- ^ it seems to help GHC emit profiling information
 	_window <- createWindow "simulation"; do
 		Display.initDisplay
 		displayCallback $= Display.doDisplay msPerStep (readIORef worldRef)
@@ -96,7 +106,7 @@ clickCallback :: IO (Sim.World,Word32) -> Key -> KeyState -> Modifiers -> Positi
 clickCallback getWorld (MouseButton MiddleButton) Down _mods pos = do
 	--never mind being a useful gui-interface at the moment
 	(x,y) <- positionToZeroOneRange pos  -- annoying. the window could theoretically have been resized by now.
-	(Sim.World machines _particles _creatures pollutions, _) <- getWorld
+	(Sim.World machines _particles _creatures pollutions _hour, _) <- getWorld
 	let (width,height) = arraySize machines
 	let loc = (truncate (x * fromIntegral width), truncate (y * fromIntegral height))
 	putStrLn $ show loc ++ ":\n\t" ++ show (machines!loc) ++ "\n\tPollution: " ++ show (pollutions!loc)
