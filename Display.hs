@@ -78,7 +78,7 @@ doDisplay msPerStep getWorld = do
 		forM_ worldCreatures $ \ (loc, creature) -> translatingTo loc $ do
 		    case creature of
 			Sim.Water _rng -> do
-				color (Color4 0.4 0.5 0.9 0.4 :: Color4 GLfloat)
+				color (Color4 0.4 0.5 0.9 0.6 :: Color4 GLfloat)
 				renderPrimitive Quads $ do
 					let shortDist = 0.5 :: GLfloat
 					let longDist = 0.5 :: GLfloat

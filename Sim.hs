@@ -191,20 +191,22 @@ simMachine' wm pm cm polluMap loc mm =
 creatureMove :: WorldMap -> Array Loc [Particle] -> Array Loc [Creature] -> WorldPollution -> Loc -> Creature -> (Loc,Creature)
 creatureMove machineMap particleMap creatureMap pollutionMap loc creature =
 	let
-		(loc'x, rng') = randomlyShiftLocLimitedly
-			(\l -> inRange (bounds machineMap) l && --isNothing (machineMap ! l))
-				case machineMap ! l of Nothing -> True; Just (Generator{}) -> True; _ -> False)
-			loc (creatureRNG creature)
-		choices = orthogonalNeighborLocsWithin (bounds machineMap) loc
-		draws = map (\l -> (pollutionMap ! l, l)) choices
+--		(loc'x, rng') = randomlyShiftLocLimitedly movetoAble loc (creatureRNG creature)
+		(rng_pollutionEntropy, rng_creature) = split (creatureRNG creature)
+		movetoAble l = inRange (bounds machineMap) l && --isNothing (machineMap ! l))
+                                case machineMap ! l of Nothing -> True; Just (Generator{}) -> True; _ -> False
+		choices = filter movetoAble $ orthogonalNeighborLocsWithin (bounds machineMap) loc
+		rawDraws = map (\l -> (pollutionMap ! l, l)) choices
+		pollutionTweaks = randomRs (0, 0.1) rng_pollutionEntropy
+		perceivedDraws = zipWith (\ (p,l) t -> (p+t, l)) rawDraws pollutionTweaks
 		--tie? arbitrary winner! more pollution is better for water!
-		best = maximumBy (comparing fst) draws
+		best = maximumBy (comparing fst) perceivedDraws
 		loc' = snd best
-		newCreature = (loc', creature {creatureRNG = rng'})
+		newCreature = (loc', creature {creatureRNG = rng_creature})
 		--water is killed by all particles!!!!(so is GUY.)
-		anyParticle = not (null (particleMap ! loc)) || not (null (particleMap ! loc')) || isJust (machineMap ! loc')
-		nobody = ((-100000,-100000), creature {creatureRNG = rng'}) --HACK!!
-	in if anyParticle then nobody else newCreature
+		die = null choices || not (null (particleMap ! loc)) || not (null (particleMap ! loc')) || isJust (machineMap ! loc')
+		nobody = ((-100000,-100000), creature {creatureRNG = rng_creature}) --HACK!!
+	in if die then nobody else newCreature
 
 --hmm, may loop infinitely if can't even stay in the same place
 --so, hack to fix that for now
