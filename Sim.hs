@@ -1,5 +1,5 @@
 
-module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Creature(..), Dir(..), MirrorDir(..), dirAngle, WorldHour(..){-hmm-}) where
+module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Creature(..), Dir(..), MirrorDir(..), dirAngle, WorldHour(..){-hmm-}, hourFraction, dayLength) where
 
 --import Data.Array
 import Data.Array.Unboxed
@@ -218,6 +218,9 @@ simulate (World oldMap oldParticles oldCreatures oldPollution oldHour) = let
 	in World newMap newParticles newCreatures newPollutions newHour
 
 
+-- | in range [0,1)
+hourFraction :: WorldHour -> Rational
+hourFraction (WorldHour n) = realToFrac n / realToFrac dayLength
 
 hourMove :: WorldHour -> WorldHour
 hourMove (WorldHour oldN) =
@@ -227,7 +230,7 @@ hourMove (WorldHour oldN) =
   else WorldHour (newN - dayLength)
 
 dayLength :: Int
-dayLength = 24
+dayLength = 50
 
 -- not as generic (in Array) as it could be
 --zipArray :: Ix i => Array i e1 -> Array i e2 -> Array i (e1,e2)

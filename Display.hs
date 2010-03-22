@@ -228,6 +228,7 @@ doDisplay msPerStep getWorld = do
 						unless (amount < 0) ( io (amount - 1) ( (side + 1) `mod` 4 ) )
 				renderPrimitive Triangles $ io ((energy+2) * 4) 0
 			Sim.Mountain -> do
+				-- How about shadows i.e. "The sun rises in the east"?
 				renderPrimitive Triangles $ do
 					let width = 0.3 :: GLfloat
 					let height = 0.4 :: GLfloat
@@ -274,7 +275,7 @@ doDisplay msPerStep getWorld = do
 			withArray (elems worldPollution) (\cArr -> foreignPollution ms cArr (fromIntegral width) (fromIntegral height))
 		-- draw the night-time! (er.) (HACK!!!)
 		do
-			let dayFraction = case worldHour of Sim.WorldHour h -> (realToFrac h + simStepsSinceLastUpdate) / 24
+			let dayFraction = case worldHour of Sim.WorldHour h -> (realToFrac h + simStepsSinceLastUpdate) / realToFrac Sim.dayLength
 			let dayLight = if dayFraction >= 0.5 then 0 else sin (dayFraction * pi * 2)
 			let nightMasking = (1 - dayLight) / 2
 			color (Color4 0.1 0.1 0.3 nightMasking :: Color4 GLfloat)
