@@ -3,11 +3,14 @@ module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Cr
 
 --import Data.Array
 import Data.Array.Unboxed
-import Data.List (genericLength, unzip4)
-import Data.Maybe (isNothing)
+import Data.List (genericLength, unzip4, maximumBy)
+import Data.Ord (comparing)
+import Data.Maybe (isJust, isNothing)
 import System.Random
 
 -- .Diff
+-- Someday I may be able to use the parallel array framework!
+-- and the stdgen-passing-around will pay off!!!
 type WholeMap = {-Diff-}Array Loc
 type SparseMultiMap a = [(Loc,a)]
 
@@ -33,6 +36,7 @@ data Machine
 	| Greenery {  }
 	| Storm { mSEnergy :: Double, m_RNG :: StdGen }
 	| Mountain {  }
+	| Riverbed { mRDepth :: Int }
 	deriving (Show)
 {-instance Show Machine where
 	show (Generator{}) = "G"
@@ -42,6 +46,7 @@ data ParticleType
 	= Energy Int  -- where Int strength > 0
 	| Chaos StdGen
 data Creature = Creature { creatureEnergy :: Double, creatureRNG :: StdGen } --energy system like Angband!.. only normally move every 10, but may communicate quicker
+	| Water { creatureRNG :: StdGen }
 --don't separate it from the creature   data Brains = Brains { }--creatureMorale :: Double,
 
 -- OpenGL uses degrees, and that's what this is used for, so use degrees.
@@ -136,9 +141,9 @@ simMachine worldMap particleMap creatureMap pollutionMap loc maybeMachine =
 	Greenery -> (Just m, pHere, cHere, 0)  --a bit powerful pollution remover at the moment, but non-invasive, seems nice in practice
 	Storm energy rng ->
 				if newEnergy > today'sChaosParticleThreshold
-					then (Just $ Storm 0 rng_storm, [newChaos], cHere, newPollution)
+					then (Just $ Storm 0 rng_storm, [newChaos], newWater:cHere, newPollution)
 				else if newEnergy < 16
-					then (Just $ Storm newEnergy rng_storm, [], cHere, newPollution)
+					then (Just $ Storm newEnergy rng_storm, [], newWater:cHere, newPollution)
 				else (Nothing, [newChaos], cHere, newPollution + 3)
 		where
 			-- rng2', rng'', (-0.4,0.4), (5,17), (0,3)
@@ -153,7 +158,9 @@ simMachine worldMap particleMap creatureMap pollutionMap loc maybeMachine =
 			pollutionEffect = max (-defaultNewPollution) rawPollutionEffect
 			newPollution = pollutionEffect + defaultNewPollution
 			newChaos = Particle newChaos'sDirection (Chaos newChaos'sRNG)
-	Mountain -> (Just m, [], cHere, 0)
+			newWater = {-Particle (newChaos'sDirection)-} (Water newChaos'sRNG)--hack?
+	Mountain -> (Just m, [], cHere, 0)--occasionally produce rain?
+	Riverbed {} -> (Just m, [], cHere, 0)
   where
   	pHere = particleMap ! loc
 	cHere = creatureMap ! loc
@@ -182,14 +189,30 @@ simMachine' wm pm cm polluMap loc mm =
 --	map (creatureMove' worldMap particleMap creatureMap pollutionMap loc) creatures
 
 creatureMove :: WorldMap -> Array Loc [Particle] -> Array Loc [Creature] -> WorldPollution -> Loc -> Creature -> (Loc,Creature)
-creatureMove worldMap particleMap creatureMap pollutionMap loc creature =
-	let (loc', rng') = randomlyShiftLocLimitedly (\l -> inRange (bounds worldMap) l && isNothing (worldMap ! l)) loc (creatureRNG creature)
-	in (loc', Creature { creatureEnergy = creatureEnergy creature, creatureRNG = rng'})
+creatureMove machineMap particleMap creatureMap pollutionMap loc creature =
+	let
+		(loc'x, rng') = randomlyShiftLocLimitedly
+			(\l -> inRange (bounds machineMap) l && --isNothing (machineMap ! l))
+				case machineMap ! l of Nothing -> True; Just (Generator{}) -> True; _ -> False)
+			loc (creatureRNG creature)
+		choices = orthogonalNeighborLocsWithin (bounds machineMap) loc
+		draws = map (\l -> (pollutionMap ! l, l)) choices
+		--tie? arbitrary winner! more pollution is better for water!
+		best = maximumBy (comparing fst) draws
+		loc' = snd best
+		newCreature = (loc', creature {creatureRNG = rng'})
+		--water is killed by all particles!!!!(so is GUY.)
+		anyParticle = not (null (particleMap ! loc)) || not (null (particleMap ! loc')) || isJust (machineMap ! loc')
+		nobody = ((-100000,-100000), creature {creatureRNG = rng'}) --HACK!!
+	in if anyParticle then nobody else newCreature
 
 --hmm, may loop infinitely if can't even stay in the same place
+--so, hack to fix that for now
+--it could make a list of all possibilities, and filter them
+--(slow?)
 randomlyShiftLocLimitedly :: RandomGen g => (Loc -> Bool) -> Loc -> g -> (Loc, g)
 randomlyShiftLocLimitedly p loc rng =
-	if p loc' then result else randomlyShiftLocLimitedly p loc rng'
+	if p loc' {-semi-hack!-} || loc' == loc then result else randomlyShiftLocLimitedly p loc rng'
 	where result@(loc', rng') = randomlyShiftLoc loc rng
 
 --rather arbitrary now, should it do diagonal movement? what if I want to use hexes sometime?

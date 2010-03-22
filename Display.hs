@@ -77,6 +77,15 @@ doDisplay msPerStep getWorld = do
 		--timeL "cret" $ 
 		forM_ worldCreatures $ \ (loc, creature) -> translatingTo loc $ do
 		    case creature of
+			Sim.Water _rng -> do
+				color (Color4 0.4 0.5 0.9 0.4 :: Color4 GLfloat)
+				renderPrimitive Quads $ do
+					let shortDist = 0.5 :: GLfloat
+					let longDist = 0.5 :: GLfloat
+					vertex $ Vertex2 (-longDist) (-shortDist)
+					vertex $ Vertex2 ( longDist) (-shortDist)
+					vertex $ Vertex2 ( longDist) ( shortDist)
+					vertex $ Vertex2 (-longDist) ( shortDist)
 			Sim.Creature { Sim.creatureEnergy = energy } -> do
 				renderPrimitive Quads $ do
 					let legSpread = 0.35 :: GLfloat
@@ -132,6 +141,18 @@ doDisplay msPerStep getWorld = do
 						randVal <- randomRIO (1, 10 :: Int)
 						unless (randVal == 1) io
 				renderPrimitive Triangles $ io
+{-
+			Sim.Water _rng -> do --HACK!
+		    		translate (Vector3 (negate simStepsSinceLastUpdate) 0 0)
+				color (Color4 0.4 0.5 0.9 0.3 :: Color4 GLfloat)
+				renderPrimitive Quads $ do
+					let shortDist = 0.5 :: GLfloat
+					let longDist = 0.5 :: GLfloat
+					vertex $ Vertex2 (-longDist) (-shortDist)
+					vertex $ Vertex2 ( longDist) (-shortDist)
+					vertex $ Vertex2 ( longDist) ( shortDist)
+					vertex $ Vertex2 (-longDist) ( shortDist)
+-}
 				
 		-- draw the machines
 		--timeL "mach" $ 
