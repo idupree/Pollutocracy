@@ -272,6 +272,17 @@ doDisplay msPerStep getWorld = do
 			let (width, height) = arraySize worldPollution
 			-- marshalling takes about 1 ms by last measurement
 			withArray (elems worldPollution) (\cArr -> foreignPollution ms cArr (fromIntegral width) (fromIntegral height))
+		-- draw the night-time! (er.) (HACK!!!)
+		do
+			let dayFraction = case worldHour of Sim.WorldHour h -> (realToFrac h + simStepsSinceLastUpdate) / 24
+			let dayLight = if dayFraction >= 0.5 then 0 else sin (dayFraction * pi * 2)
+			let nightMasking = (1 - dayLight) / 2
+			color (Color4 0.1 0.1 0.3 nightMasking :: Color4 GLfloat)
+			renderPrimitive Quads $ do--numX numY
+				vertex $ Vertex2 0 (0::GLfloat)
+				vertex $ Vertex2 numX (0::GLfloat)
+				vertex $ Vertex2 numX numY
+				vertex $ Vertex2 0 numY
 
 	swapBuffers
 	reportErrors
