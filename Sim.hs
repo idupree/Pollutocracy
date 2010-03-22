@@ -134,19 +134,24 @@ simMachine worldMap particleMap creatureMap pollutionMap loc maybeMachine =
 					else p{- modifyingParticleDir $ mirror mdir-}) pHere, cHere, defaultNewPollution)
 	Greenery -> (Just m, pHere, cHere, 0)  --a bit powerful pollution remover at the moment, but non-invasive, seems nice in practice
 	Storm energy rng ->
-				if newEnergy > randomVal
-					then (Just $ Storm 0 rng2', [newChaos], cHere, newPollution)
+				if newEnergy > today'sChaosParticleThreshold
+					then (Just $ Storm 0 rng_storm, [newChaos], cHere, newPollution)
 				else if newEnergy < 16
-					then (Just $ Storm newEnergy rng2', [], cHere, newPollution)
+					then (Just $ Storm newEnergy rng_storm, [], cHere, newPollution)
 				else (Nothing, [newChaos], cHere, newPollution + 3)
 		where
-			(rng1,rng2) = split rng
-			newEnergy = energy + fromIntegral particleEnergyHere + pollutionAffect --eating pollution hurts it, spewing helps
-			(rawPollutionAffect,rng2') = randomR (-0.4,0.4) rng2  --how should it affect energy???
-			pollutionAffect = max (-defaultNewPollution) rawPollutionAffect
-			newPollution = pollutionAffect + defaultNewPollution
-			(randomVal,rng1') = randomR (5,17) rng1
-			newChaos = let (dirN,rng'') = randomR (0,3) rng1' in Particle (toEnum dirN) (Chaos rng'')
+			-- rng2', rng'', (-0.4,0.4), (5,17), (0,3)
+			(rng_storm, rng2) = split rng
+			(today'sChaosParticleThreshold, rng3) = randomR (5,17) rng2
+			(rawPollutionEffect, rng4) = randomR (-0.4,0.4) rng3  --how should it affect energy???
+			(newChaos'sDirection,rng5) = randomDir rng4
+			newChaos'sRNG = rng5
+			randomDir :: (RandomGen g) => g -> (Dir, g)
+			randomDir rng_1 = let (dirN, rng_2) = randomR (0,3) rng_1 in (toEnum dirN, rng_2)
+			newEnergy = energy + fromIntegral particleEnergyHere + pollutionEffect --eating pollution hurts the storm, spewing helps
+			pollutionEffect = max (-defaultNewPollution) rawPollutionEffect
+			newPollution = pollutionEffect + defaultNewPollution
+			newChaos = Particle newChaos'sDirection (Chaos newChaos'sRNG)
 	Mountain -> (Just m, [], cHere, 0)
   where
   	pHere = particleMap ! loc
