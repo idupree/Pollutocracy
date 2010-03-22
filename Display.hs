@@ -298,7 +298,7 @@ doDisplay msPerStep getWorld = do
 		do
 			let dayFraction = case worldHour of Sim.WorldHour h -> (realToFrac h + simStepsSinceLastUpdate) / realToFrac Sim.dayLength
 			let dayLight = if dayFraction >= 0.5 then 0 else sin (dayFraction * pi * 2)
-			let nightMasking = (1 - dayLight) / 2
+			let nightMasking = (1 - dayLight) / 2 /10--since it doesn't do anything
 			color (Color4 0.1 0.1 0.3 nightMasking :: Color4 GLfloat)
 			renderPrimitive Quads $ do--numX numY
 				vertex $ Vertex2 0 (0::GLfloat)
