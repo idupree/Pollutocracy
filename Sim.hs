@@ -8,13 +8,14 @@ import Data.Maybe (isNothing)
 import System.Random
 
 -- .Diff
-type MapType = {-Diff-}Array
+type WholeMap = {-Diff-}Array Loc
+type SparseMultiMap a = [(Loc,a)]
 
 type Loc = (Int,Int)
 type Offset = (Int,Int) -- (not) aka dir
-type WorldMap = MapType Loc (Maybe Machine)
-type WorldMovers = [(Loc,Particle)]
-type WorldCreatures = [(Loc,Creature)]
+type WorldMap = WholeMap (Maybe Machine)
+type WorldMovers = SparseMultiMap Particle
+type WorldCreatures = SparseMultiMap Creature
 type Pollution = Double
 type WorldPollution = UArray Loc Pollution
 data World = World { worldMap :: WorldMap, worldParticles :: WorldMovers, worldCreatures :: WorldCreatures, worldPollution :: WorldPollution }
