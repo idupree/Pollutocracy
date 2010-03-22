@@ -39,7 +39,7 @@ doDisplay msPerStep getWorld = do
 	--clearColor $= newColor
 	--clear [ColorBuffer] -- --make random colors
 	(Sim.World worldMap worldParticles worldCreatures worldPollution, lastUpdateTime) <- getWorld
-	let secondsSinceLastUpdate = fromIntegral (ms - lastUpdateTime) / fromIntegral msPerStep :: GLfloat
+	let simStepsSinceLastUpdate = fromIntegral (ms - lastUpdateTime) / fromIntegral msPerStep :: GLfloat
 	--print worldMap
 	let ((minX,minY),(maxX,maxY)) = bounds worldMap
 	let (numX,numY) = {-case bounds worldMap of ((minX,maxX),(minY,maxY)) ->-} (fromIntegral $ maxX + 1 - minX, fromIntegral $ maxY + 1 - minY)
@@ -107,7 +107,7 @@ doDisplay msPerStep getWorld = do
 		--timeL "part" $ 
 		mapM_ (\ (loc, Sim.Particle dir pType) -> translatingTo loc $ do
 		    rotate (Sim.dirAngle dir) rotationReference
-		    translate (Vector3 (secondsSinceLastUpdate) 0 0)
+		    translate (Vector3 (simStepsSinceLastUpdate) 0 0)
 		    case pType of  --hmm, could separate list by particle-type and encompass more with each renderPrimitive...
 		    	Sim.Energy strength -> do
 				color (Color4 0.9 0.9 0.2 (log $ fromIntegral strength) :: Color4 GLfloat)
