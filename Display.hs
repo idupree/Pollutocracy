@@ -10,7 +10,7 @@ import Clock (millisecondsNow)
 import Data.Array.Unboxed
 --import Data.List(intersperse)
 import Data.Word(Word32)
-import Control.Monad(when, unless, liftM2)
+import Control.Monad(when, unless, liftM2, forM_)
 --import FastRoughRNG
 --import Control.Arrow ( (***) )
 --import qualified Data.Array.IO as IOArr
@@ -66,46 +66,47 @@ doDisplay msPerStep getWorld = do
 		scale (recip numX) (recip numY :: GLfloat) 1
 		-- draw the floors
 		--timeL "flor" $ 
-		renderPrimitive Quads $ mapM_ (\ ((x,y), _maybeMachine) ->
-		    let (x',y') = (fromIntegral x :: GLfloat, fromIntegral y :: GLfloat) in do
+		renderPrimitive Quads $ forM_ (assocs worldMap) $ \ ((x,y), _maybeMachine) -> do
+			let (x',y') = (fromIntegral x :: GLfloat, fromIntegral y :: GLfloat)
 			color (Color3 0.50 0.50 0.60 :: Color3 GLfloat); vertex (Vertex2  x'     y'    )
 			color (Color3 0.45 0.55 0.45 :: Color3 GLfloat); vertex (Vertex2 (x'+1)  y'    )
 			color (Color3 0.60 0.60 0.50 :: Color3 GLfloat); vertex (Vertex2 (x'+1) (y'+1) )
 			color (Color3 0.40 0.35 0.40 :: Color3 GLfloat); vertex (Vertex2  x'    (y'+1) )
-		  ) $ assocs worldMap
-		-- draw the creatures (what about multiple creatures in the same place?)
+		-- draw the creatures (what about multiple creatures in the same place?
+		-- I guess one just gets drawn first, then the next...)
 		--timeL "cret" $ 
-		mapM_ (\ (loc, Sim.Creature { Sim.creatureEnergy = energy{-, Sim.creatureRNG = creatureRNG-} }) -> translatingTo loc $ do
-			renderPrimitive Quads $ do
-				let legSpread = 0.35 :: GLfloat
-				let legHeight = -0.4 :: GLfloat
-				let waistSpread = 0.2 :: GLfloat
-				let waistHeight = 0 :: GLfloat
-				let armSpread = 0.3 :: GLfloat
-				let shoulderSpread = 0.2 :: GLfloat
-				let neckSpread = 0.1 :: GLfloat
-				let neckHeight = 0.2 :: GLfloat
-				let headHeight = 0.45 :: GLfloat
-				let headSpread = 0.2 :: GLfloat
-				color (Color3 0.5 0.5 (0.7 + realToFrac energy / 20) :: Color3 GLfloat)
-				vertex $ Vertex2 (-legSpread) (legHeight)
-				vertex $ Vertex2 ( legSpread) (legHeight)
-				vertex $ Vertex2 ( waistSpread) (waistHeight)
-				vertex $ Vertex2 (-waistSpread) (waistHeight)
-				color (Color3 0.4 0.9 0.6 :: Color3 GLfloat)
-				vertex $ Vertex2 (-armSpread) (waistHeight)
-				vertex $ Vertex2 ( armSpread) (waistHeight)
-				vertex $ Vertex2 ( shoulderSpread) (neckHeight)
-				vertex $ Vertex2 (-shoulderSpread) (neckHeight)
-				color (Color3 0.9 0.7 0.5 :: Color3 GLfloat)
-				vertex $ Vertex2 (-neckSpread) (neckHeight)
-				vertex $ Vertex2 ( neckSpread) (neckHeight)
-				vertex $ Vertex2 ( headSpread) (headHeight)
-				vertex $ Vertex2 (-headSpread) (headHeight)
-		  ) worldCreatures
+		forM_ worldCreatures $ \ (loc, creature) -> translatingTo loc $ do
+		    case creature of
+			Sim.Creature { Sim.creatureEnergy = energy } -> do
+				renderPrimitive Quads $ do
+					let legSpread = 0.35 :: GLfloat
+					let legHeight = -0.4 :: GLfloat
+					let waistSpread = 0.2 :: GLfloat
+					let waistHeight = 0 :: GLfloat
+					let armSpread = 0.3 :: GLfloat
+					let shoulderSpread = 0.2 :: GLfloat
+					let neckSpread = 0.1 :: GLfloat
+					let neckHeight = 0.2 :: GLfloat
+					let headHeight = 0.45 :: GLfloat
+					let headSpread = 0.2 :: GLfloat
+					color (Color3 0.5 0.5 (0.7 + realToFrac energy / 20) :: Color3 GLfloat)
+					vertex $ Vertex2 (-legSpread) (legHeight)
+					vertex $ Vertex2 ( legSpread) (legHeight)
+					vertex $ Vertex2 ( waistSpread) (waistHeight)
+					vertex $ Vertex2 (-waistSpread) (waistHeight)
+					color (Color3 0.4 0.9 0.6 :: Color3 GLfloat)
+					vertex $ Vertex2 (-armSpread) (waistHeight)
+					vertex $ Vertex2 ( armSpread) (waistHeight)
+					vertex $ Vertex2 ( shoulderSpread) (neckHeight)
+					vertex $ Vertex2 (-shoulderSpread) (neckHeight)
+					color (Color3 0.9 0.7 0.5 :: Color3 GLfloat)
+					vertex $ Vertex2 (-neckSpread) (neckHeight)
+					vertex $ Vertex2 ( neckSpread) (neckHeight)
+					vertex $ Vertex2 ( headSpread) (headHeight)
+					vertex $ Vertex2 (-headSpread) (headHeight)
 		-- draw the particles (what relation to machines? what about the dangerous particles?)
 		--timeL "part" $ 
-		mapM_ (\ (loc, Sim.Particle dir pType) -> translatingTo loc $ do
+		forM_ worldParticles $ \ (loc, Sim.Particle dir pType) -> translatingTo loc $ do
 		    rotate (Sim.dirAngle dir) rotationReference
 		    translate (Vector3 (simStepsSinceLastUpdate) 0 0)
 		    case pType of  --hmm, could separate list by particle-type and encompass more with each renderPrimitive...
@@ -132,10 +133,9 @@ doDisplay msPerStep getWorld = do
 						unless (randVal == 1) io
 				renderPrimitive Triangles $ io
 				
-		  ) worldParticles
 		-- draw the machines
 		--timeL "mach" $ 
-		mapM_ (\ (loc,machine) -> translatingTo loc $ do
+		forM_ [(l,m) | (l,Just m) <- assocs worldMap] $ \ (loc,machine) -> translatingTo loc $ do
 		    case machine of
 			Sim.Generator dir energy -> do
 				rotate (Sim.dirAngle dir) (Vector3 0 0 1 :: Vector3 GLfloat)
@@ -262,7 +262,7 @@ doDisplay msPerStep getWorld = do
 					vertex (Vertex2 (-distFromCenter) (-dist))
 					vertex (Vertex2 (-dist) (-distFromCenter))
 					vertex (Vertex2 (distFromCenter) (dist))-}
-		  ) $ [(l,m) | (l,Just m) <- assocs worldMap]
+
 		-- draw the pollution!
 		-- (the 'resolution' should depend on windowsize / (i.e.?) number of places displayed)
 		-- currently just 5x5 per place though
