@@ -12,6 +12,7 @@ void foreignPollution(uint32_t randSeed, const double * pollution, uint32_t poll
 	#define RAND() ( randSeed = (((randSeed * 1103515245u) + 12345u) & 0x7fffffffu) )
 	#define RAND_FLOAT_UP_TO(hi) ( (double)RAND() * (hi) / 0x7fffffffu )
 	#define RAND_FLOAT_BETWEEN(lo,hi) ( (lo) + (double)RAND() * ((hi)-(lo)) / 0x7fffffffu )
+	glPushMatrix();
 	/*for(x = 0; x != width; ++x) {
 		for(y = 0; y != height; ++y) {
 			int got = AT(pollution,x,y);
@@ -66,6 +67,7 @@ void foreignPollution(uint32_t randSeed, const double * pollution, uint32_t poll
 			glVertex2i(x  , y+1);*/
 		}
 	glEnd();
+	glPopMatrix();
 }
 
 
