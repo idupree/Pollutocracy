@@ -1,4 +1,7 @@
 
+// I wrote this in C because the Haskell version I had wasn't being fast
+// enough for me.  Now this is simple and works great!
+
 #include <math.h>
 #include <stdlib.h>
 #include <inttypes.h>
