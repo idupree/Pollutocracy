@@ -15,8 +15,9 @@ module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Cr
 -- (The reason is obviously that I wanted to see what it would be like
 -- if I had something be affected by pollution in some nontrivial way.
 -- Or that I wanted flowing rivers that go in a direction!)
---
 
+-- The guy wanders around mostly randomly and usually dies pretty soon.
+-- Pay him/her no mind. (constructor "Creature")
 
 --import Data.Array
 import Data.Array.Unboxed
