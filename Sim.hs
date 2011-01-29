@@ -1,6 +1,23 @@
 
 module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Creature(..), Dir(..), MirrorDir(..), dirAngle, WorldHour(..){-hmm-}, hourFraction, dayLength) where
 
+-- Generators emit pollution, as well as bolts of energy that
+-- bounce off mirrors and can energize other generators.
+--
+-- Mountains get in the way.
+--
+-- Trees absorb pollution.
+--
+-- Chaos-storms emit chaos, which changes these "machines" randomly
+-- into other types of "machines", and water, which for some odd
+-- reason is attracted to pollution yet destroyed by bolts of energy.
+--
+-- (The reason is obviously that I wanted to see what it would be like
+-- if I had something be affected by pollution in some nontrivial way.
+-- Or that I wanted flowing rivers that go in a direction!)
+--
+
+
 --import Data.Array
 import Data.Array.Unboxed
 import Data.List (genericLength, unzip4, maximumBy)
