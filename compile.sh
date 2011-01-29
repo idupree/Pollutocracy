@@ -19,7 +19,8 @@ set -e
 #instead always deleting/redoing the build directory
 #rm -rf build || true; mkdir build; cp ...,
 #rsync -u doesn't update files whose modification-times haven't changed
-rsync -u *.hs *.hsc *.c *.h build
+rsync -u *.hs *.c *.h build
+  #*.hsc commented since there are no .hsc files anymore
 #although, if you want the warnings again, or different minor compile options,
 #hmm...
 cd build
