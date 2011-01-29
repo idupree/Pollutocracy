@@ -9,6 +9,8 @@
 void foreignPollution(uint32_t randSeed, const double * pollution, uint32_t pollutionWidth, uint32_t pollutionHeight) {
 	uint32_t x, y;
 	#define AT(array,x,y) ( (array)[((x)*(array##Height))+((y))] )
+	//Glibc's parameters, seems to work fine. See wikipedia
+	//http://en.wikipedia.org/wiki/Linear_congruential_generator
 	#define RAND() ( randSeed = (((randSeed * 1103515245u) + 12345u) & 0x7fffffffu) )
 	#define RAND_FLOAT_UP_TO(hi) ( (double)RAND() * (hi) / 0x7fffffffu )
 	#define RAND_FLOAT_BETWEEN(lo,hi) ( (lo) + (double)RAND() * ((hi)-(lo)) / 0x7fffffffu )
