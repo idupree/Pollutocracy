@@ -42,7 +42,7 @@ doTimedStuff worldRef = do
 	modifyIORef worldRef (Sim.simulate *** const ms)
 
 doIdleStuff :: Int -> IORef (Sim.World,Word32) -> IO ()
-doIdleStuff msPerStep worldRef = Display.doDisplay msPerStep (readIORef worldRef) --return ()
+doIdleStuff msPerStep worldRef = doDisplayCallback msPerStep worldRef --return ()
 
 randomRNGs :: RandomGen g => g -> [g]
 randomRNGs rng = rng1 : randomRNGs rng2
@@ -97,7 +97,7 @@ main = do
 	-- ^ it seems to help GHC emit profiling information
 	_window <- createWindow "simulation"; do
 		Display.initDisplay
-		displayCallback $= Display.doDisplay msPerStep (readIORef worldRef)
+		displayCallback $= doDisplayCallback msPerStep worldRef
 		keyboardMouseCallback $= Just (clickCallback (readIORef worldRef))
 	mainLoop
 
@@ -116,4 +116,10 @@ positionToZeroOneRange (Position x y) = get viewport >>=
 	\(Position minX minY, Size sizeX sizeY) -> return
 		(fromIntegral (x - minX) / fromIntegral sizeX,
 		 fromIntegral (fromIntegral sizeY - (y - minY) {-stupid GLUT difference of *origin* to OpenGL-}) / fromIntegral sizeY)
+
+doDisplayCallback :: Int -> IORef (Sim.World,Word32) -> IO ()
+doDisplayCallback msPerStep worldRef = do
+	ms <- millisecondsNow
+	(world, lastUpdateTime) <- readIORef worldRef
+	Display.doDisplay world msPerStep ms lastUpdateTime
 

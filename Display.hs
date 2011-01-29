@@ -5,7 +5,6 @@ module Display(doDisplay, initDisplay) where
 import Graphics.UI.GLUT
 --import Data.IORef
 import qualified Sim
-import Clock (millisecondsNow)
 --as Random
 import Data.Array.Unboxed
 --import Data.List(intersperse)
@@ -32,16 +31,17 @@ initDisplay = do
 	ortho2D 0 1 0 1
 	blend $= Enabled ; blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
 
--- I should refactor this to have type
--- Sim.World -> Word32{-current time-} -> Word32{-last update time-} -> IO ().
--- There is no excuse for the current signature.
-doDisplay :: Int -> IO (Sim.World,Word32) -> IO ()
-doDisplay msPerStep getWorld = do
-	ms <- millisecondsNow
+-- Possibly the three int-like arguments should be better distinguished
+-- or combined ("data TimeSituation"?) somehow.  Or even made into one
+-- value, simStepsSinceLastUpdate, which could be used fine as a random
+-- seed most likely (just transform it appropriately).
+doDisplay :: Sim.World -> Int{-milliseconds per step-}
+	-> Word32{-current time-} -> Word32{-last update time-} -> IO ()
+doDisplay (Sim.World worldMap worldParticles worldCreatures worldPollution worldHour)
+  msPerStep ms lastUpdateTime = do
 	--newColor <- liftM4 Color4 (randomRIOGLF (0,1)) (randomRIOGLF (0,1)) (randomRIOGLF (0,1)) (randomRIOGLF (1,1))
 	--clearColor $= newColor
 	--clear [ColorBuffer] -- --make random colors
-	(Sim.World worldMap worldParticles worldCreatures worldPollution worldHour, lastUpdateTime) <- getWorld
 	let simStepsSinceLastUpdate = fromIntegral (ms - lastUpdateTime) / fromIntegral msPerStep :: GLfloat
 	--print worldMap
 	let ((minX,minY),(maxX,maxY)) = bounds worldMap
