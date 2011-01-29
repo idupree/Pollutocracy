@@ -1,0 +1,12 @@
+To build, read the instructions I wrote in the beginning of "compile.sh".
+I've only used it on Linux myself; if you're lucky it might work on another
+system too.
+
+To run,
+./build/game
+
+To run the simulation faster, run
+./build/game -s 100
+where 500 is the default value and lower is faster.
+
+
