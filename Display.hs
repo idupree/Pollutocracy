@@ -32,6 +32,9 @@ initDisplay = do
 	ortho2D 0 1 0 1
 	blend $= Enabled ; blendFunc $= (SrcAlpha, OneMinusSrcAlpha)
 
+-- I should refactor this to have type
+-- Sim.World -> Word32{-current time-} -> Word32{-last update time-} -> IO ().
+-- There is no excuse for the current signature.
 doDisplay :: Int -> IO (Sim.World,Word32) -> IO ()
 doDisplay msPerStep getWorld = do
 	ms <- millisecondsNow
