@@ -1,4 +1,8 @@
-
+-- Some experiments from before I understood Haskell performance as well
+-- (and a few years ago so GHC's optimizer wasn't as good).
+-- These days I'd probably take a similar approach to the C code:
+-- avoid type classes, just provide some simple inlineable functions to
+-- step the RNG: and it could probably rival the C's performance.
 module FastRoughRNG(FastRoughRNG(..), module System.Random, roughFloatingRange,
 	randomFloatingList, randomFloatingArray, randomFloatingArray2) where
 
