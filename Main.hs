@@ -19,6 +19,17 @@ import qualified Display(doDisplay, initDisplay)
 import ArrayUtils (arraySize)
 import Clock (millisecondsNow)
 
+data Flag = MillisecondsPerStep Int
+
+defaultMillisecondsPerStep :: Int
+defaultMillisecondsPerStep = 500
+
+options :: [OptDescr Flag]
+options = [
+	Option "s" ["milliseconds-per-step","ms/st"] (ReqArg (MillisecondsPerStep . read) "TIME")
+		("Amount of TIME between simulation steps (default "++show defaultMillisecondsPerStep++")")
+	]
+
 --er. was useful in SDL.
 initTimeStuff :: IO ()
 initTimeStuff = return ()
@@ -60,18 +71,6 @@ initialWorld g =
 	) (
 	    Sim.WorldHour 0
 	)
-
-data Flag = MillisecondsPerStep Int
-
-defaultMillisecondsPerStep :: Int
-defaultMillisecondsPerStep = 500
-
-options :: [OptDescr Flag]
-options = [
-	Option "s" ["milliseconds-per-step","ms/st"] (ReqArg (MillisecondsPerStep . read) "TIME")
-		("Amount of TIME between simulation steps (default "++show defaultMillisecondsPerStep++")")
-	
-	]
 
 main :: IO ()
 main = do
