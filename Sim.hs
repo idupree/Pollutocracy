@@ -117,7 +117,7 @@ simMachine ::
 	WorldMap -> Array Loc [Particle] -> Array Loc [Creature] -> WorldPollution
 	-> Loc -> Maybe Machine
 	-> (Maybe Machine, [Particle], [Creature], Pollution)
-simMachine worldMap particleMap creatureMap pollutionMap loc maybeMachine =
+simMachine terrainMap particleMap creatureMap pollutionMap loc maybeMachine =
   case maybeMachine of
     Nothing -> (Nothing, pHere, cHere, defaultNewPollution)
     (Just m) -> let
@@ -169,7 +169,7 @@ simMachine worldMap particleMap creatureMap pollutionMap loc maybeMachine =
 	makeRNG = mkStdGen $ (truncate(pollutionHere*1000000)) + (fst loc) + (100000*snd loc)
 	defaultNewPollution = let
 			neighborLocs = orthogonalNeighborLocsWithin (bounds pollutionMap) loc
-			significantNeighborLocs = filter (\l -> case worldMap!l of Just Mountain -> False; _ -> True) neighborLocs
+			significantNeighborLocs = filter (\l -> case terrainMap!l of Just Mountain -> False; _ -> True) neighborLocs
 			neighborPollutions = map (pollutionMap !) significantNeighborLocs
 			pollutionKept = pollutionHere * (1 - transferFraction*genericLength significantNeighborLocs)
 			pollutionTaken = sum $ map (* transferFraction) neighborPollutions

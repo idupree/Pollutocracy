@@ -1,5 +1,5 @@
 {-# LANGUAGE ForeignFunctionInterface, FlexibleContexts #-}
-{-# INCLUDE "foreignPollution.h" #-}
+-- deprecated: no longer has any effect: {-# INCLUDE "foreignPollution.h" #-}
 module Display(doDisplay, initDisplay) where
 
 import Graphics.UI.GLUT
