@@ -33,8 +33,9 @@ initDisplay = do
 
 -- Possibly the three int-like arguments should be better distinguished
 -- or combined ("data TimeSituation"?) somehow.  Or even made into one
--- value, simStepsSinceLastUpdate, which could be used fine as a random
--- seed most likely (just transform it appropriately).
+-- value, simStepsSinceLastUpdate(Float), which could be used fine as a random
+-- seed (which ms is currently used for), most likely (just transform it appropriately).
+-- TODO.
 doDisplay :: Sim.World -> Int{-milliseconds per step-}
 	-> Word32{-current time-} -> Word32{-last update time-} -> IO ()
 doDisplay (Sim.World worldMap worldParticles worldCreatures worldPollution worldHour)
