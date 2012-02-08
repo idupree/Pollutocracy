@@ -31,5 +31,5 @@ gcc -c -I/usr/include/ -O3 -Wall foreignPollution.c #-O0 -ggdb #-pipe -time
 ghc -c -Wall --make Main.hs "$@"
 echo 'Linking...'
 #no -lSDL
-ghc -o game -package clock -package GLUT -lGL -lGLU -lglut -lm *.o "$@"
+ghc -o game -package clock -package GLUT -package random -lGL -lGLU -lglut -lm *.o "$@"
 
