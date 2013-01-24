@@ -1,7 +1,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 module Clock (millisecondsNow) where
 import Data.Word (Word32)
-import System.Posix.Clock
+import System.Clock
 
 millisecondsNow :: IO Word32
 millisecondsNow = fmap timeSpecToMilliseconds (getTime Monotonic)
