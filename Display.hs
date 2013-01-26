@@ -17,14 +17,15 @@ import System.Random
 import ArrayUtils (arraySize)
 import Foreign.Marshal.Array (withArray)
 import Foreign.Ptr (Ptr)
-import Unsafe.Coerce (unsafeCoerce) --lame...
+import Foreign.C.Types (CFloat(CFloat))
 foreign import ccall unsafe "foreignPollution" foreignPollution :: Word32 -> Ptr Double -> Word32 -> Word32 -> IO ()
 
---since realToFrac and that crap, and non-exposed newtype
+-- We don't use the Random instance of GLfloat (CFloat) directly
+-- because it uses realToFrac which might be slow.
 randomRIOGLF :: (Float, Float) -> IO GLfloat
 randomRIOGLF range_ = do
   result <- randomRIO range_
-  return (unsafeCoerce result)
+  return (CFloat result)
 
 initDisplay :: IO ()
 initDisplay = do
