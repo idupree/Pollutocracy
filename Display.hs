@@ -11,6 +11,11 @@ import ArrayUtils (arraySize)
 import Foreign.Marshal.Array (withArray)
 import Foreign.Ptr (Ptr)
 import Foreign.C.Types (CFloat(CFloat))
+
+-- This C code is for speed.  I first wrote this code before vertex buffers
+-- even existed in the OpenGL standard (and before I knew about them);
+-- it's quite likely that modern GHC and OpenGL (ES) 2.0 could be plenty fast
+-- without using C code.
 foreign import ccall unsafe "foreignPollution" foreignPollution :: Word32 -> Ptr Double -> Word32 -> Word32 -> IO ()
 
 -- We don't use the Random instance of GLfloat (CFloat) directly
