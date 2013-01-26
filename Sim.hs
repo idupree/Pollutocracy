@@ -1,3 +1,4 @@
+-- License: GPL v2 or later
 
 module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Creature(..), Dir(..), MirrorDir(..), dirAngle, WorldHour(..){-hmm-}, hourFraction, dayLength) where
 

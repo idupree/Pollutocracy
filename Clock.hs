@@ -1,3 +1,5 @@
+-- License: GPL v2 or later
+
 module Clock (millisecondsNow) where
 import Data.Word (Word32)
 import System.Clock

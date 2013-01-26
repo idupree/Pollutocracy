@@ -1,3 +1,4 @@
+/* License: GPL v2 or later */
 
 // I wrote this in C because the Haskell version I had wasn't being fast
 // enough for me.  Now this is simple and works great!

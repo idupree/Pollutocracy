@@ -1,4 +1,6 @@
+-- License: GPL v2 or later
 {-# LANGUAGE ForeignFunctionInterface #-}
+
 module Display(doDisplay, initDisplay) where
 
 import Graphics.UI.GLUT

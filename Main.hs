@@ -1,3 +1,4 @@
+-- License: GPL v2 or later
 
 module Main(main) where
 
