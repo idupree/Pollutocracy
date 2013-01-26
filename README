@@ -1,3 +1,6 @@
+This is a randomly generated world simulation.  It has machines that make
+energy bolts but also emit smog, and some other natural and peculiar things.
+
 To build, read the instructions I wrote in the beginning of "compile.sh".
 I've only used it on Linux myself; if you're lucky it might work on another
 system too.
