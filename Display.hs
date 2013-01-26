@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface, FlexibleContexts #-}
+{-# LANGUAGE ForeignFunctionInterface #-}
 module Display(doDisplay, initDisplay) where
 
 import Graphics.UI.GLUT
