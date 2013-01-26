@@ -71,7 +71,6 @@ data Creature
 	-- but may communicate quicker.
 	= Creature { creatureEnergy :: Double, creatureRNG :: StdGen }
 	| Water { creatureRNG :: StdGen }
---don't separate it from the creature   data Brains = Brains { }--creatureMorale :: Double,
 
 -- OpenGL uses degrees, and that's what this is used for, so use degrees.
 dirAngle :: Num{-Floating-} a => Dir -> a
@@ -94,13 +93,6 @@ shift = shiftByOffset . dirOffset
 
 particleMove :: (Loc,Particle) -> (Loc,Particle)
 particleMove (loc,p@(Particle dir _)) = (shift dir loc,p)
---particleMove ((x,y),p@(Particle dir _)) = ((x+dx,y+dy),p)
-	--where (dx,dy) = dirOffset dir
-	{-where newLoc = case dir of  --careful, directions have real meaning here
-		North -> (x,y+1)
-		South -> (x,y-1)
-		East -> (x+1,y)
-		West -> (x-1,y)-}
 
 modifyingParticleDir :: (Dir -> Dir) -> (Particle -> Particle)
 modifyingParticleDir f (Particle d t) = Particle (f d) t
@@ -171,7 +163,7 @@ simMachine terrainMap particleMap creatureMap pollutionMap loc maybeMachine =
 			    map (\p@(Particle pdir ptype) ->
 					if mirrorSilveredWhenGoingDirection m pdir
 					then Particle (mirror mdir pdir) (ptype)
-					else p{- modifyingParticleDir $ mirror mdir-})
+					else p)
 				pHere,
 			    cHere,
 			    defaultNewPollution)
@@ -186,10 +178,9 @@ simMachine terrainMap particleMap creatureMap pollutionMap loc maybeMachine =
 		else (Nothing,
 		      [newChaos], cHere, newPollution + 3)
 	    where
-		-- rng2', rng'', (-0.4,0.4), (5,17), (0,3)
 		(rng_storm, rng2) = split rng
 		(today'sChaosParticleThreshold, rng3) = randomR (5,17) rng2
-		(rawPollutionEffect, rng4) = randomR (-0.4,0.4) rng3  --how should it affect energy???
+		(rawPollutionEffect, rng4) = randomR (-0.4,0.4) rng3
 		(newChaos'sDirection,rng5) = randomDir rng4
 		newChaos'sRNG = rng5
 		randomDir :: (RandomGen g) => g -> (Dir, g)
@@ -198,14 +189,17 @@ simMachine terrainMap particleMap creatureMap pollutionMap loc maybeMachine =
 		pollutionEffect = max (-defaultNewPollution) rawPollutionEffect
 		newPollution = pollutionEffect + defaultNewPollution
 		newChaos = Particle newChaos'sDirection (Chaos newChaos'sRNG)
-		newWater = {-Particle (newChaos'sDirection)-} (Water newChaos'sRNG)--hack?
+		newWater = (Water newChaos'sRNG)--hack: sharing RNG?
 	Mountain -> (Just m, [], cHere, 0)--occasionally produce rain?
 	Riverbed {} -> (Just m, [], cHere, 0)
   where
 	pHere = particleMap ! loc
 	cHere = creatureMap ! loc
 	particleEnergyHere = sum [e | Particle _ (Energy e) <- pHere]
-	pollutionHere = pollutionMap ! loc  --should edges be dissipated off of? should there be any decrease in total? wind?! diagonals?
+	-- should edges of the map be dissipated off of?
+	-- should there be any decrease in total?
+	-- wind?! diagonals?
+	pollutionHere = pollutionMap ! loc
 	makeRNG = mkStdGen $ (truncate(pollutionHere*1000000)) + (fst loc) + (100000*snd loc)
 	defaultNewPollution = let
 		neighborLocs = orthogonalNeighborLocsWithin (bounds pollutionMap) loc
@@ -226,16 +220,11 @@ simMachine' wm pm cm polluMap loc mm =
 	let (res1,res2,res3,res4) = simMachine wm pm cm polluMap loc mm
 	in (res1, map ((,) loc) res2, map ((,) loc) res3, res4)
 
---creatureMove :: WorldMap -> Array Loc [Particle] -> Array Loc [Creature] -> WorldPollution -> Loc -> [Creature] -> [(Loc,Creature)]
---creatureMove worldMap particleMap creatureMap pollutionMap loc creatures =
---	map (creatureMove' worldMap particleMap creatureMap pollutionMap loc) creatures
-
 creatureMove :: WorldMap -> Array Loc [Particle] -> Array Loc [Creature] -> WorldPollution -> Loc -> Creature -> (Loc,Creature)
 creatureMove machineMap particleMap creatureMap pollutionMap loc creature =
 	let
---		(loc'x, rng') = randomlyShiftLocLimitedly movetoAble loc (creatureRNG creature)
 		(rng_pollutionEntropy, rng_creature) = split (creatureRNG creature)
-		movetoAble l = inRange (bounds machineMap) l && --isNothing (machineMap ! l))
+		movetoAble l = inRange (bounds machineMap) l &&
 			case machineMap ! l of
 				Nothing -> True
 				Just (Generator{}) -> True
@@ -254,28 +243,11 @@ creatureMove machineMap particleMap creatureMap pollutionMap loc creature =
 			not (null (particleMap ! loc)) ||
 			not (null (particleMap ! loc')) ||
 			isJust (machineMap ! loc')
+		-- HACK method to delete the creature:
 		nobody = ((-100000,-100000),
-			  creature {creatureRNG = rng_creature}) --HACK!!
+			  creature {creatureRNG = rng_creature})
 	in if die then nobody else newCreature
 
---hmm, may loop infinitely if can't even stay in the same place
---so, hack to fix that for now
---it could make a list of all possibilities, and filter them
---(slow?)
-randomlyShiftLocLimitedly :: RandomGen g => (Loc -> Bool) -> Loc -> g -> (Loc, g)
-randomlyShiftLocLimitedly p loc rng =
-	if p loc' {-semi-hack!-} || loc' == loc
-	then result
-	else randomlyShiftLocLimitedly p loc rng'
-	where result@(loc', rng') = randomlyShiftLoc loc rng
-
---rather arbitrary now, should it do diagonal movement? what if I want to use hexes sometime?
-randomlyShiftLoc :: RandomGen g => Loc -> g -> (Loc, g)
-randomlyShiftLoc loc@(x,y) rng =
-	let
-		(x', rng') = randomR (x-1, x+1) rng
-		(y', rng'')= randomR (y-1, y+1) rng'
-	in ((x',y'), rng'')
 
 simulate :: World -> World
 simulate (World oldMap oldParticles oldCreatures oldPollution oldHour) = let
