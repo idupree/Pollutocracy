@@ -37,7 +37,13 @@ type WorldCreatures = SparseMultiMap Creature
 type Pollution = Double
 type WorldPollution = UArray Loc Pollution
 newtype WorldHour = WorldHour Int
-data World = World { worldMap :: WorldMap, worldParticles :: WorldMovers, worldCreatures :: WorldCreatures, worldPollution :: WorldPollution, worldHour :: WorldHour }
+data World = World
+	{ worldMap :: WorldMap
+	, worldParticles :: WorldMovers
+	, worldCreatures :: WorldCreatures
+	, worldPollution :: WorldPollution
+	, worldHour :: WorldHour
+	}
 data Dir = North | East | South | West
 	deriving (Enum,Bounded,Show)
 data MirrorDir = NW_SE | SW_NE
@@ -60,7 +66,10 @@ data Particle = Particle Dir ParticleType
 data ParticleType
 	= Energy Int  -- where Int strength > 0
 	| Chaos StdGen
-data Creature = Creature { creatureEnergy :: Double, creatureRNG :: StdGen } --energy system like Angband!.. only normally move every 10, but may communicate quicker
+data Creature
+	-- Energy system like Angband; only normally move every 10 energy,
+	-- but may communicate quicker.
+	= Creature { creatureEnergy :: Double, creatureRNG :: StdGen }
 	| Water { creatureRNG :: StdGen }
 --don't separate it from the creature   data Brains = Brains { }--creatureMorale :: Double,
 
@@ -110,7 +119,10 @@ mirrorSilveredWhenGoingDirection mir@(Mirror {}) dir =
 			North -> mMRightSilvered
 			West -> mMRightSilvered
 	) mir
-mirrorSilveredWhenGoingDirection machine dir = error ( "BUG! mirrorSilveredWhenGoingDirection should not be called with a non-mirror, namely " ++ show machine ++ " (with dir = " ++ show dir ++ ")" )
+mirrorSilveredWhenGoingDirection machine dir =
+	error ( "BUG! mirrorSilveredWhenGoingDirection should not be" ++
+		" called with a non-mirror, namely " ++ show machine ++
+		" (with dir = " ++ show dir ++ ")" )
 
 mirror :: MirrorDir -> Dir -> Dir
 mirror NW_SE North = West
@@ -137,14 +149,17 @@ simMachine terrainMap particleMap creatureMap pollutionMap loc maybeMachine =
     Nothing -> (Nothing, pHere, cHere, defaultNewPollution)
     (Just m) -> let
     			chaosRNGs = [rng | Particle _ (Chaos rng) <- pHere]
-    			chaoslyRandomMachine :: StdGen -> Machine  -- could also return next g
+    			chaoslyRandomMachine :: StdGen -> Machine
+						-- could also return next g
 			chaoslyRandomMachine rng = let (r,rng') = randomR (0,28) rng in
 				if r < 4 then Generator (toEnum r) 5
 				else if r < 16 then Mirror (toEnum (r `mod` 2)) (r<12) (r>=8)
 				else if r < 20 then Storm (fromIntegral r - 16) rng'
 				else if r < 25 then Greenery
 				else Mountain  -- should chaos create/destroy MOUNTAINS???
-    		in if not (null chaosRNGs) then (Just $ chaoslyRandomMachine $ head chaosRNGs, [], cHere, defaultNewPollution + 3)
+    		in if not (null chaosRNGs) then
+			(Just $ chaoslyRandomMachine $ head chaosRNGs,
+			 [], cHere, defaultNewPollution + 3)
 	else
       case m of
 	Generator dir energy -> if energy >= 5   -- pretty efficient generator: 80% efficiency
