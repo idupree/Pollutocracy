@@ -11,6 +11,7 @@
 
 void foreignPollution(uint32_t randSeed, const double * pollution, uint32_t pollutionWidth, uint32_t pollutionHeight) {
 	uint32_t x, y;
+	const uint32_t negative1AsXYtype = -1;
 	#define AT(array,x,y) ( (array)[((x)*(array##Height))+((y))] )
 	//Glibc's parameters, seems to work fine. See wikipedia
 	//http://en.wikipedia.org/wiki/Linear_congruential_generator
@@ -18,16 +19,22 @@ void foreignPollution(uint32_t randSeed, const double * pollution, uint32_t poll
 	#define RAND_FLOAT_UP_TO(hi) ( (double)RAND() * (hi) / 0x7fffffffu )
 	#define RAND_FLOAT_BETWEEN(lo,hi) ( (lo) + (double)RAND() * ((hi)-(lo)) / 0x7fffffffu )
 	glPushMatrix();
-	/*for(x = 0; x != width; ++x) {
-		for(y = 0; y != height; ++y) {
-			int got = AT(pollution,x,y);
-			printf("%c", got<10 ? '0'+got : 'a'+(got-10));
+	// To log pollution amounts to stderr (enable by changing the 'if').
+	if(0) {
+		for(y = pollutionHeight-1; y != negative1AsXYtype; --y) {
+			for(x = 0; x != pollutionWidth; ++x) {
+				const int roundedPollution = AT(pollution,x,y);
+				const char indicator =
+					( (roundedPollution < 10)
+					  ? ( '0' + roundedPollution      )
+					  : ( 'a' + (roundedPollution-10) ));
+				fputc(indicator, stderr);
+			}
+			printf("\n");
 		}
 		printf("\n");
 	}
-	printf("\n");*/
 	glScaled(1.0/3.0, 1.0/3.0, 1);
-	/*want to shift by 0.5*/
 	glTranslated(-0.5, -0.5, 0.0);
 	glBegin(GL_QUADS);
 		const uint32_t deterministicHeavinessWidth = pollutionWidth + 2;
