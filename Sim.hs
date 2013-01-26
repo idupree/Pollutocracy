@@ -19,17 +19,14 @@ module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Cr
 -- The guy wanders around mostly randomly and usually dies pretty soon.
 -- Pay him/her no mind. (constructor "Creature")
 
---import Data.Array
 import Data.Array.Unboxed
 import Data.List (genericLength, unzip4, maximumBy)
 import Data.Ord (comparing)
 import Data.Maybe (isJust, isNothing)
 import System.Random
 
--- .Diff
--- Someday I may be able to use the parallel array framework!
--- and the stdgen-passing-around will pay off!!!
-type WholeMap = {-Diff-}Array Loc
+-- (TODO: Maybe use DiffArray or some modern data structure?)
+type WholeMap = Array Loc
 type SparseMultiMap a = [(Loc,a)]
 
 type Loc = (Int,Int)
