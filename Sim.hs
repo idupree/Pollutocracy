@@ -139,22 +139,29 @@ simMachine ::
 simMachine terrainMap particleMap creatureMap pollutionMap loc maybeMachine =
   case maybeMachine of
     Nothing -> (Nothing, pHere, cHere, defaultNewPollution)
-    (Just m) -> let
-			chaosRNGs = [rng | Particle _ (Chaos rng) <- pHere]
-			chaoslyRandomMachine :: StdGen -> Machine
-						-- could also return next g
-			chaoslyRandomMachine rng = let (r,rng') = randomR (0,28) rng in
-				if r < 4 then Generator (toEnum r) 5
-				else if r < 16 then Mirror (toEnum (r `mod` 2)) (r<12) (r>=8)
-				else if r < 20 then Storm (fromIntegral r - 16) rng'
-				else if r < 25 then Greenery
-				else Mountain  -- should chaos create/destroy MOUNTAINS???
-		in if not (null chaosRNGs) then
-			(Just $ chaoslyRandomMachine $ head chaosRNGs,
-			 [], cHere, defaultNewPollution + 3)
+    (Just m) ->
+	-- If a chaos particle hits a machine, that mutates the machine
+	-- rather than the machine here doing anything this turn.
+	let
+		chaosRNGs = [rng | Particle _ (Chaos rng) <- pHere]
+		chaoslyRandomMachine :: StdGen -> Machine
+					-- could also return next g
+		chaoslyRandomMachine rng = let (r,rng') = randomR (0,28) rng in
+			if r < 4 then Generator (toEnum r) 5
+			else if r < 16 then Mirror (toEnum (r `mod` 2)) (r<12) (r>=8)
+			else if r < 20 then Storm (fromIntegral r - 16) rng'
+			else if r < 25 then Greenery
+			else Mountain  -- should chaos create/destroy MOUNTAINS???
+	in if not (null chaosRNGs) then
+		(Just $ chaoslyRandomMachine $ head chaosRNGs,
+		 [], cHere, defaultNewPollution + 3)
 	else
       case m of
-	Generator dir energy -> if energy >= 5   -- pretty efficient generator: 80% efficiency
+	-- Generators generate energy over time (and when an energy particle
+	-- hits them), and every time they have enough energy stored,
+	-- they emit an energy particle using that energy.
+	-- It's a pretty efficient generator: 80% efficiency.
+	Generator dir energy -> if energy >= 5
 		then (Just $ m {m_Energy = energy - 5 + particleEnergyHere},
 		      [Particle dir (Energy 4)], cHere, defaultNewPollution + 1)
 		else (Just $ m {m_Energy = energy + 1 + particleEnergyHere },
@@ -167,7 +174,19 @@ simMachine terrainMap particleMap creatureMap pollutionMap loc maybeMachine =
 				pHere,
 			    cHere,
 			    defaultNewPollution)
-	Greenery -> (Just m, pHere, cHere, 0)  --a bit powerful pollution remover at the moment, but non-invasive, seems nice in practice
+	-- Greenery absorbs pollution by letting pollution diffuse into it
+	-- and then remaining unpolluted.
+	-- It's a bit powerful pollution remover at the moment,
+	-- but non-invasive; seems nice in practice.
+	Greenery -> (Just m, pHere, cHere, 0)
+	-- Storms are strange.
+	-- They randomly absorb or emit pollution.
+	-- Absorbing pollution decreases their energy,
+	--   and emitting increases their energy.
+	-- Storms emit "chaos", which travels in a direction
+	-- until it hits something and mutates it, and "water",
+	-- which is a Creature that follows pollution.  These
+	-- emissions depend on the storm's energy and on chance.
 	Storm energy rng ->
 		if newEnergy > today'sChaosParticleThreshold
 		then (Just $ Storm 0 rng_storm,
@@ -185,22 +204,25 @@ simMachine terrainMap particleMap creatureMap pollutionMap loc maybeMachine =
 		newChaos'sRNG = rng5
 		randomDir :: (RandomGen g) => g -> (Dir, g)
 		randomDir rng_1 = let (dirN, rng_2) = randomR (0,3) rng_1 in (toEnum dirN, rng_2)
-		newEnergy = energy + fromIntegral particleEnergyHere + pollutionEffect --eating pollution hurts the storm, spewing helps
+		newEnergy = energy + fromIntegral particleEnergyHere + pollutionEffect
 		pollutionEffect = max (-defaultNewPollution) rawPollutionEffect
 		newPollution = pollutionEffect + defaultNewPollution
 		newChaos = Particle newChaos'sDirection (Chaos newChaos'sRNG)
 		newWater = (Water newChaos'sRNG)--hack: sharing RNG?
-	Mountain -> (Just m, [], cHere, 0)--occasionally produce rain?
+	-- Mountains just sit there and get in the way of everything.
+	-- (Perhaps they could occasionally produce rain?)
+	Mountain -> (Just m, [], cHere, 0)
+	-- (Riverbeds are an unused constructor currently.)
 	Riverbed {} -> (Just m, [], cHere, 0)
   where
 	pHere = particleMap ! loc
 	cHere = creatureMap ! loc
 	particleEnergyHere = sum [e | Particle _ (Energy e) <- pHere]
+	-- Pollution diffusion:
 	-- should edges of the map be dissipated off of?
 	-- should there be any decrease in total?
 	-- wind?! diagonals?
 	pollutionHere = pollutionMap ! loc
-	makeRNG = mkStdGen $ (truncate(pollutionHere*1000000)) + (fst loc) + (100000*snd loc)
 	defaultNewPollution = let
 		neighborLocs = orthogonalNeighborLocsWithin (bounds pollutionMap) loc
 		significantNeighborLocs = filter (\l -> case terrainMap!l of
