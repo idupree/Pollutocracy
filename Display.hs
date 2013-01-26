@@ -249,6 +249,7 @@ doDisplay (Sim.World worldMap worldParticles worldCreatures worldPollution world
 					vertex $ Vertex2 ((-width)+offsetX) ((-offsetY)+0.05)
 					vertex $ Vertex2 (offsetX) ((height-offsetY)+0.05)
 					vertex $ Vertex2 (width+offsetX) ((-offsetY)+0.05)
+			Sim.Riverbed{} -> error "Unimplemented yet"
 
 		-- draw the pollution!
 		-- (the 'resolution' should depend on windowsize / (i.e.?) number of places displayed)

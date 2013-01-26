@@ -23,7 +23,7 @@ module Sim (simulate, World(..), Machine(..), Particle(..), ParticleType(..), Cr
 import Data.Array.Unboxed
 import Data.List (genericLength, unzip4, maximumBy)
 import Data.Ord (comparing)
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe (isJust)
 import System.Random
 
 -- (TODO: Maybe use DiffArray or some modern data structure?)
@@ -94,9 +94,6 @@ shift = shiftByOffset . dirOffset
 
 particleMove :: (Loc,Particle) -> (Loc,Particle)
 particleMove (loc,p@(Particle dir _)) = (shift dir loc,p)
-
-modifyingParticleDir :: (Dir -> Dir) -> (Particle -> Particle)
-modifyingParticleDir f (Particle d t) = Particle (f d) t
 
 mirrorSilveredWhenGoingDirection :: Machine{-Mirror-} -> Dir -> Bool
 mirrorSilveredWhenGoingDirection mir@(Mirror {}) dir =
@@ -244,7 +241,7 @@ simMachine' wm pm cm polluMap loc mm =
 	in (res1, map ((,) loc) res2, map ((,) loc) res3, res4)
 
 creatureMove :: WorldMap -> Array Loc [Particle] -> Array Loc [Creature] -> WorldPollution -> Loc -> Creature -> (Loc,Creature)
-creatureMove machineMap particleMap creatureMap pollutionMap loc creature =
+creatureMove machineMap particleMap _creatureMap pollutionMap loc creature =
 	let
 		(rng_pollutionEntropy, rng_creature) = split (creatureRNG creature)
 		movetoAble l = inRange (bounds machineMap) l &&
