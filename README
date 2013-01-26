@@ -3,7 +3,12 @@ energy bolts but also emit smog, and some other natural and peculiar things.
 
 To build, you need a Haskell development environment (Haskell Platform,
 or GHC + cabal-install, are fine), as well as the OpenGL and GLUT C libraries.
-Then `cabal build` (if you have this source package) or
+Then,
+
+`cabal configure; cabal build` (if you have this source package. You might
+have to follow Cabal's instructions to install packages this depends on, then
+try again)
+  or
 `cabal install Pollutocracy` (if you want to download and install the version
 online on Hackage; the binary might then be ~/.cabal/bin/Pollutocracy).
 
