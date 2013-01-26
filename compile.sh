@@ -13,20 +13,17 @@ set -e
 # Then run ./compile.sh and hope it works!
 
 
-#instead always deleting/redoing the build directory
-#rm -rf build || true; mkdir build; cp ...,
-#rsync -u doesn't update files whose modification-times haven't changed
+# Make a separate build directory so that intermediate files don't
+# clutter the main directory.  (This project should probably use Cabal
+# instead of this script.  I started this project before Cabal existed(!).
+
+# rsync of multiple files creates the dest dir if it doesn't exist already.
+# rsync -u doesn't update files whose modification-times haven't changed.
 rsync -u *.hs *.c *.h build
-  #*.hsc commented since there are no .hsc files anymore
-#although, if you want the warnings again, or different minor compile options,
-#hmm...
 cd build
 
-#we don't use SDL anymore
-#hsc2hs -I/usr/include/SDL/ *.hsc
-gcc -c -I/usr/include/ -O3 -Wall foreignPollution.c #-O0 -ggdb #-pipe -time
+gcc -c -I/usr/include/ -O3 -Wall foreignPollution.c
 ghc -c -Wall --make Main.hs "$@"
 echo 'Linking...'
-#no -lSDL
 ghc -o game -package clock -package GLUT -package random -lGL -lGLU -lglut -lm *.o "$@"
 
