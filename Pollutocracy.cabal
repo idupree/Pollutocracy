@@ -25,7 +25,7 @@ source-repository head
 
 executable Pollutocracy
   main-is: Main.hs
-  build-depends: base, array, random, GLUT, clock
+  build-depends: base < 6, array, random, GLUT, clock
   includes: foreignPollution.h
   c-sources: foreignPollution.c
   cc-options: -Wall
