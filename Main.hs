@@ -6,14 +6,11 @@ import Graphics.UI.GLUT
 import Data.IORef
 import qualified Sim
 import System.Random
---as Random
 import Control.Monad
 import Data.Array.IArray
---import Data.List(intersperse)
 import Data.Word(Word32)
 import Control.Arrow( (***) )
 import System.Console.GetOpt
---import Data.Maybe(listToMaybe)
 
 import qualified Display(doDisplay, initDisplay)
 import ArrayUtils (arraySize)
@@ -26,15 +23,11 @@ defaultMillisecondsPerStep = 500
 
 options :: [OptDescr Flag]
 options = [
-	Option "s" ["milliseconds-per-step","ms/st"] (ReqArg (MillisecondsPerStep . read) "TIME")
-		("Amount of TIME between simulation steps (default "++show defaultMillisecondsPerStep++")")
+	Option "s" ["milliseconds-per-step","ms/st"]
+		(ReqArg (MillisecondsPerStep . read) "TIME")
+		("Amount of TIME between simulation steps (default "
+		  ++ show defaultMillisecondsPerStep ++ ")")
 	]
-
---er. was useful in SDL.
-initTimeStuff :: IO ()
-initTimeStuff = return ()
-
---type WorldInfo = (Sim.World, ClockTime)
 
 doTimedStuff :: IORef (Sim.World,Word32) -> IO ()
 doTimedStuff worldRef = do
@@ -42,7 +35,7 @@ doTimedStuff worldRef = do
 	modifyIORef worldRef (Sim.simulate *** const ms)
 
 doIdleStuff :: Int -> IORef (Sim.World,Word32) -> IO ()
-doIdleStuff msPerStep worldRef = doDisplayCallback msPerStep worldRef --return ()
+doIdleStuff msPerStep worldRef = doDisplayCallback msPerStep worldRef
 
 randomRNGs :: RandomGen g => g -> [g]
 randomRNGs rng = rng1 : randomRNGs rng2
@@ -74,7 +67,6 @@ initialWorld g =
 
 main :: IO ()
 main = do
-	initTimeStuff
 	firstWorld <- liftM initialWorld newStdGen
 	worldRef <- newIORef (firstWorld,0)
 	initialDisplayMode $= [DoubleBuffered]
