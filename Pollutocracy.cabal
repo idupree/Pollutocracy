@@ -11,5 +11,6 @@ executable Pollutocracy
   build-depends: base, array, random, GLUT, clock
   includes: foreignPollution.h
   c-sources: foreignPollution.c
-  cc-options: -O3
+  cc-options: -O3 -Wall
+  ghc-options: -Wall
   other-modules: ArrayUtils, Clock, Display, Sim
