@@ -148,8 +148,8 @@ simMachine terrainMap particleMap creatureMap pollutionMap loc maybeMachine =
   case maybeMachine of
     Nothing -> (Nothing, pHere, cHere, defaultNewPollution)
     (Just m) -> let
-    			chaosRNGs = [rng | Particle _ (Chaos rng) <- pHere]
-    			chaoslyRandomMachine :: StdGen -> Machine
+			chaosRNGs = [rng | Particle _ (Chaos rng) <- pHere]
+			chaoslyRandomMachine :: StdGen -> Machine
 						-- could also return next g
 			chaoslyRandomMachine rng = let (r,rng') = randomR (0,28) rng in
 				if r < 4 then Generator (toEnum r) 5
@@ -157,53 +157,65 @@ simMachine terrainMap particleMap creatureMap pollutionMap loc maybeMachine =
 				else if r < 20 then Storm (fromIntegral r - 16) rng'
 				else if r < 25 then Greenery
 				else Mountain  -- should chaos create/destroy MOUNTAINS???
-    		in if not (null chaosRNGs) then
+		in if not (null chaosRNGs) then
 			(Just $ chaoslyRandomMachine $ head chaosRNGs,
 			 [], cHere, defaultNewPollution + 3)
 	else
       case m of
 	Generator dir energy -> if energy >= 5   -- pretty efficient generator: 80% efficiency
-		then (Just $ m {m_Energy = energy - 5 + particleEnergyHere}, [Particle dir (Energy 4)], cHere, defaultNewPollution + 1)
-		else (Just $ m {m_Energy = energy + 1 + particleEnergyHere }, [], cHere, defaultNewPollution)
-	Mirror mdir _ _ -> (Just m, map (\p@(Particle pdir ptype) -> if mirrorSilveredWhenGoingDirection m pdir
+		then (Just $ m {m_Energy = energy - 5 + particleEnergyHere},
+		      [Particle dir (Energy 4)], cHere, defaultNewPollution + 1)
+		else (Just $ m {m_Energy = energy + 1 + particleEnergyHere },
+		      [], cHere, defaultNewPollution)
+	Mirror mdir _ _ -> (Just m,
+			    map (\p@(Particle pdir ptype) ->
+					if mirrorSilveredWhenGoingDirection m pdir
 					then Particle (mirror mdir pdir) (ptype)
-					else p{- modifyingParticleDir $ mirror mdir-}) pHere, cHere, defaultNewPollution)
+					else p{- modifyingParticleDir $ mirror mdir-})
+				pHere,
+			    cHere,
+			    defaultNewPollution)
 	Greenery -> (Just m, pHere, cHere, 0)  --a bit powerful pollution remover at the moment, but non-invasive, seems nice in practice
 	Storm energy rng ->
-				if newEnergy > today'sChaosParticleThreshold
-					then (Just $ Storm 0 rng_storm, [newChaos], newWater:cHere, newPollution)
-				else if newEnergy < 16
-					then (Just $ Storm newEnergy rng_storm, [], newWater:cHere, newPollution)
-				else (Nothing, [newChaos], cHere, newPollution + 3)
-		where
-			-- rng2', rng'', (-0.4,0.4), (5,17), (0,3)
-			(rng_storm, rng2) = split rng
-			(today'sChaosParticleThreshold, rng3) = randomR (5,17) rng2
-			(rawPollutionEffect, rng4) = randomR (-0.4,0.4) rng3  --how should it affect energy???
-			(newChaos'sDirection,rng5) = randomDir rng4
-			newChaos'sRNG = rng5
-			randomDir :: (RandomGen g) => g -> (Dir, g)
-			randomDir rng_1 = let (dirN, rng_2) = randomR (0,3) rng_1 in (toEnum dirN, rng_2)
-			newEnergy = energy + fromIntegral particleEnergyHere + pollutionEffect --eating pollution hurts the storm, spewing helps
-			pollutionEffect = max (-defaultNewPollution) rawPollutionEffect
-			newPollution = pollutionEffect + defaultNewPollution
-			newChaos = Particle newChaos'sDirection (Chaos newChaos'sRNG)
-			newWater = {-Particle (newChaos'sDirection)-} (Water newChaos'sRNG)--hack?
+		if newEnergy > today'sChaosParticleThreshold
+		then (Just $ Storm 0 rng_storm,
+		      [newChaos], newWater:cHere, newPollution)
+		else if newEnergy < 16
+		then (Just $ Storm newEnergy rng_storm,
+		      [], newWater:cHere, newPollution)
+		else (Nothing,
+		      [newChaos], cHere, newPollution + 3)
+	    where
+		-- rng2', rng'', (-0.4,0.4), (5,17), (0,3)
+		(rng_storm, rng2) = split rng
+		(today'sChaosParticleThreshold, rng3) = randomR (5,17) rng2
+		(rawPollutionEffect, rng4) = randomR (-0.4,0.4) rng3  --how should it affect energy???
+		(newChaos'sDirection,rng5) = randomDir rng4
+		newChaos'sRNG = rng5
+		randomDir :: (RandomGen g) => g -> (Dir, g)
+		randomDir rng_1 = let (dirN, rng_2) = randomR (0,3) rng_1 in (toEnum dirN, rng_2)
+		newEnergy = energy + fromIntegral particleEnergyHere + pollutionEffect --eating pollution hurts the storm, spewing helps
+		pollutionEffect = max (-defaultNewPollution) rawPollutionEffect
+		newPollution = pollutionEffect + defaultNewPollution
+		newChaos = Particle newChaos'sDirection (Chaos newChaos'sRNG)
+		newWater = {-Particle (newChaos'sDirection)-} (Water newChaos'sRNG)--hack?
 	Mountain -> (Just m, [], cHere, 0)--occasionally produce rain?
 	Riverbed {} -> (Just m, [], cHere, 0)
   where
-  	pHere = particleMap ! loc
+	pHere = particleMap ! loc
 	cHere = creatureMap ! loc
 	particleEnergyHere = sum [e | Particle _ (Energy e) <- pHere]
 	pollutionHere = pollutionMap ! loc  --should edges be dissipated off of? should there be any decrease in total? wind?! diagonals?
 	makeRNG = mkStdGen $ (truncate(pollutionHere*1000000)) + (fst loc) + (100000*snd loc)
 	defaultNewPollution = let
-			neighborLocs = orthogonalNeighborLocsWithin (bounds pollutionMap) loc
-			significantNeighborLocs = filter (\l -> case terrainMap!l of Just Mountain -> False; _ -> True) neighborLocs
-			neighborPollutions = map (pollutionMap !) significantNeighborLocs
-			pollutionKept = pollutionHere * (1 - transferFraction*genericLength significantNeighborLocs)
-			pollutionTaken = sum $ map (* transferFraction) neighborPollutions
-			transferFraction = 1/16
+		neighborLocs = orthogonalNeighborLocsWithin (bounds pollutionMap) loc
+		significantNeighborLocs = filter (\l -> case terrainMap!l of
+			Just Mountain -> False; _ -> True) neighborLocs
+		neighborPollutions = map (pollutionMap !) significantNeighborLocs
+		pollutionKept = pollutionHere *
+			(1 - transferFraction*genericLength significantNeighborLocs)
+		pollutionTaken = sum $ map (* transferFraction) neighborPollutions
+		transferFraction = 1/16
 		in pollutionKept + pollutionTaken
 
 simMachine' ::
@@ -224,8 +236,12 @@ creatureMove machineMap particleMap creatureMap pollutionMap loc creature =
 --		(loc'x, rng') = randomlyShiftLocLimitedly movetoAble loc (creatureRNG creature)
 		(rng_pollutionEntropy, rng_creature) = split (creatureRNG creature)
 		movetoAble l = inRange (bounds machineMap) l && --isNothing (machineMap ! l))
-                                case machineMap ! l of Nothing -> True; Just (Generator{}) -> True; _ -> False
-		choices = filter movetoAble $ orthogonalNeighborLocsWithin (bounds machineMap) loc
+			case machineMap ! l of
+				Nothing -> True
+				Just (Generator{}) -> True
+				_ -> False
+		choices = filter movetoAble $
+			orthogonalNeighborLocsWithin (bounds machineMap) loc
 		rawDraws = map (\l -> (pollutionMap ! l, l)) choices
 		pollutionTweaks = randomRs (0, 0.1) rng_pollutionEntropy
 		perceivedDraws = zipWith (\ (p,l) t -> (p+t, l)) rawDraws pollutionTweaks
@@ -234,8 +250,12 @@ creatureMove machineMap particleMap creatureMap pollutionMap loc creature =
 		loc' = snd best
 		newCreature = (loc', creature {creatureRNG = rng_creature})
 		--water is killed by all particles!!!!(so is GUY.)
-		die = null choices || not (null (particleMap ! loc)) || not (null (particleMap ! loc')) || isJust (machineMap ! loc')
-		nobody = ((-100000,-100000), creature {creatureRNG = rng_creature}) --HACK!!
+		die = null choices ||
+			not (null (particleMap ! loc)) ||
+			not (null (particleMap ! loc')) ||
+			isJust (machineMap ! loc')
+		nobody = ((-100000,-100000),
+			  creature {creatureRNG = rng_creature}) --HACK!!
 	in if die then nobody else newCreature
 
 --hmm, may loop infinitely if can't even stay in the same place
@@ -244,7 +264,9 @@ creatureMove machineMap particleMap creatureMap pollutionMap loc creature =
 --(slow?)
 randomlyShiftLocLimitedly :: RandomGen g => (Loc -> Bool) -> Loc -> g -> (Loc, g)
 randomlyShiftLocLimitedly p loc rng =
-	if p loc' {-semi-hack!-} || loc' == loc then result else randomlyShiftLocLimitedly p loc rng'
+	if p loc' {-semi-hack!-} || loc' == loc
+	then result
+	else randomlyShiftLocLimitedly p loc rng'
 	where result@(loc', rng') = randomlyShiftLoc loc rng
 
 --rather arbitrary now, should it do diagonal movement? what if I want to use hexes sometime?
@@ -259,17 +281,22 @@ simulate :: World -> World
 simulate (World oldMap oldParticles oldCreatures oldPollution oldHour) = let
 	worldBounds = bounds oldMap
 	particleArray = accumArray (flip (:)) [] worldBounds
-		$ filter (inRange worldBounds . fst) $ map (particleMove) oldParticles
+		$ filter (inRange worldBounds . fst)
+		$ map (particleMove) oldParticles
 	oldCreatureArray = accumArray (flip (:)) [] worldBounds oldCreatures
 	newCreatureArray = accumArray (flip (:)) [] worldBounds
-		$ filter (inRange worldBounds . fst) $ map (uncurry (creatureMove oldMap particleArray oldCreatureArray oldPollution)) oldCreatures
-	results = map (uncurry (simMachine' oldMap particleArray newCreatureArray oldPollution)) (assocs oldMap)--mapArrayWithIndices (simMachine w particleArray) w
+		$ filter (inRange worldBounds . fst)
+		$ map (uncurry (creatureMove oldMap particleArray
+				oldCreatureArray oldPollution)) oldCreatures
+	results = map (uncurry (simMachine' oldMap particleArray
+				newCreatureArray oldPollution)) (assocs oldMap)
+			--mapArrayWithIndices (simMachine w particleArray) w
 	(machines,newParticle'ss,newCreature'ss,pollutions) = unzip4 results
 	newParticles = concat newParticle'ss
 	newCreatures = concat newCreature'ss
 	newMap = listArray worldBounds machines
 	newPollutions = listArray worldBounds pollutions  -- this assumes pollution and map have same bounds
-        newHour = hourMove oldHour
+	newHour = hourMove oldHour
 	in World newMap newParticles newCreatures newPollutions newHour
 
 
