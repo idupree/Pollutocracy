@@ -1,18 +1,11 @@
 {-# LANGUAGE ForeignFunctionInterface, FlexibleContexts #-}
--- deprecated: no longer has any effect: {-# INCLUDE "foreignPollution.h" #-}
 module Display(doDisplay, initDisplay) where
 
 import Graphics.UI.GLUT
---import Data.IORef
 import qualified Sim
---as Random
 import Data.Array.Unboxed
---import Data.List(intersperse)
 import Data.Word(Word32)
 import Control.Monad(when, unless, liftM2, forM_)
---import FastRoughRNG
---import Control.Arrow ( (***) )
---import qualified Data.Array.IO as IOArr
 import System.Random
 import ArrayUtils (arraySize)
 import Foreign.Marshal.Array (withArray)
@@ -41,26 +34,9 @@ doDisplay :: Sim.World -> Int{-milliseconds per step-}
 	-> Word32{-current time-} -> Word32{-last update time-} -> IO ()
 doDisplay (Sim.World worldMap worldParticles worldCreatures worldPollution worldHour)
   msPerStep ms lastUpdateTime = do
-	--newColor <- liftM4 Color4 (randomRIOGLF (0,1)) (randomRIOGLF (0,1)) (randomRIOGLF (0,1)) (randomRIOGLF (1,1))
-	--clearColor $= newColor
-	--clear [ColorBuffer] -- --make random colors
 	let simStepsSinceLastUpdate = fromIntegral (ms - lastUpdateTime) / fromIntegral msPerStep :: GLfloat
-	--print worldMap
 	let ((minX,minY),(maxX,maxY)) = bounds worldMap
-	let (numX,numY) = {-case bounds worldMap of ((minX,maxX),(minY,maxY)) ->-} (fromIntegral $ maxX + 1 - minX, fromIntegral $ maxY + 1 - minY)
-	--print (numX,numY)
-	-- draw the floors
-	{-dl <- defineNewList Compile $ renderPrimitive Quads $ do
-			color (Color3 0.4 0.5 0.7 :: Color3 GLfloat); vertex (Vertex2 0 0 :: Vertex2 GLfloat)
-			color (Color3 0.4 0.6 0.4 :: Color3 GLfloat); vertex (Vertex2 1 0 :: Vertex2 GLfloat)
-			color (Color3 0.7 0.7 0.5 :: Color3 GLfloat); vertex (Vertex2 1 1 :: Vertex2 GLfloat)
-			color (Color3 0.4 0.3 0.4 :: Color3 GLfloat); vertex (Vertex2 0 1 :: Vertex2 GLfloat)
-	time $ preservingMatrix $ do
-		scale (1/numX) (1/numY::GLfloat) 1
-		mapM_ (\ ((x,y),maybeMachine) -> let (x',y') = (fromIntegral x :: GLfloat, fromIntegral y :: GLfloat) in do
-			unsafePreservingMatrix $ do
-				translate (Vector3 x' y' 0)
-				callList dl) $ assocs worldMap-}
+	let (numX,numY) = (fromIntegral $ maxX + 1 - minX, fromIntegral $ maxY + 1 - minY)
 	let rotationReference = Vector3 0 0 1 :: Vector3 GLfloat
 	let distFromCenter = 0.5 :: GLfloat
 	let translatingTo :: Integral coord => (coord,coord) -> IO a -> IO a
@@ -123,7 +99,9 @@ doDisplay (Sim.World worldMap worldParticles worldCreatures worldPollution world
 		forM_ worldParticles $ \ (loc, Sim.Particle dir pType) -> translatingTo loc $ do
 		    rotate (Sim.dirAngle dir) rotationReference
 		    translate (Vector3 (simStepsSinceLastUpdate) 0 0)
-		    case pType of  --hmm, could separate list by particle-type and encompass more with each renderPrimitive...
+		    --hmm, could separate list by particle-type and
+		    --encompass more with each renderPrimitive...
+		    case pType of
 		    	Sim.Energy strength -> do
 				color (Color4 0.9 0.9 0.2 (log $ fromIntegral strength) :: Color4 GLfloat)
 				renderPrimitive Quads $ do
@@ -146,19 +124,7 @@ doDisplay (Sim.World worldMap worldParticles worldCreatures worldPollution world
 						randVal <- randomRIO (1, 10 :: Int)
 						unless (randVal == 1) io
 				renderPrimitive Triangles $ io
-{-
-			Sim.Water _rng -> do --HACK!
-		    		translate (Vector3 (negate simStepsSinceLastUpdate) 0 0)
-				color (Color4 0.4 0.5 0.9 0.3 :: Color4 GLfloat)
-				renderPrimitive Quads $ do
-					let shortDist = 0.5 :: GLfloat
-					let longDist = 0.5 :: GLfloat
-					vertex $ Vertex2 (-longDist) (-shortDist)
-					vertex $ Vertex2 ( longDist) (-shortDist)
-					vertex $ Vertex2 ( longDist) ( shortDist)
-					vertex $ Vertex2 (-longDist) ( shortDist)
--}
-				
+		
 		-- draw the machines
 		--timeL "mach" $ 
 		forM_ [(l,m) | (l,Just m) <- assocs worldMap] $ \ (loc,machine) -> translatingTo loc $ do
@@ -179,14 +145,10 @@ doDisplay (Sim.World worldMap worldParticles worldCreatures worldPollution world
 					vertex $ Vertex2 ( dist) (-shortDist)
 					vertex $ Vertex2 ( dist) ( shortDist)
 					vertex $ Vertex2 (-shortDist) ( shortDist)
-			Sim.Mirror mdir lSilvered rSilvered -> do --mirrorSilveredWhenGoingDirection
+			Sim.Mirror mdir lSilvered rSilvered -> do
 				rotate (case mdir of { Sim.NW_SE -> 0; Sim.SW_NE -> -90 } :: GLfloat) rotationReference
 				let
-					--colorBy False = color (Color3 0.9 0.9 0.9 :: Color3 GLfloat)
-					--colorBy True  = color (Color3 0.7 0.7 0.7 :: Color3 GLfloat)
-					--xMult = case mdir of { Sim.NW_SE -> 1; Sim.SW_NE -> -1 }
 					dist = 0.25 :: GLfloat
-					--avgDist = (distFromCenter + dist) / 2
 					silverDepth = 0.07 -- orthogonal, in both directions
 				renderPrimitive Quads $ do
 					color (Color3 0.9 0.9 0.9 :: Color3 GLfloat)
@@ -280,21 +242,11 @@ doDisplay (Sim.World worldMap worldParticles worldCreatures worldPollution world
 					vertex $ Vertex2 ((-width)+offsetX) ((-offsetY)+0.05)
 					vertex $ Vertex2 (offsetX) ((height-offsetY)+0.05)
 					vertex $ Vertex2 (width+offsetX) ((-offsetY)+0.05)
-					
-			{-Sim.Mirror Sim.SW_NE -> do
-				color (Color3 0.9 0.9 0.9 :: Color3 GLfloat)
-				renderPrimitive Quads $ do
-					let dist = 0.4 :: GLfloat
-					vertex (Vertex2 (dist) (distFromCenter))
-					vertex (Vertex2 (-distFromCenter) (-dist))
-					vertex (Vertex2 (-dist) (-distFromCenter))
-					vertex (Vertex2 (distFromCenter) (dist))-}
 
 		-- draw the pollution!
 		-- (the 'resolution' should depend on windowsize / (i.e.?) number of places displayed)
 		-- currently just 5x5 per place though
 		-- should it be invisible where really low?
-		--mapM_ (\ (loc,thickness) -> translatingTo loc $ do
 		do
 			let (width, height) = arraySize worldPollution
 			-- marshalling takes about 1 ms by last measurement
@@ -305,7 +257,7 @@ doDisplay (Sim.World worldMap worldParticles worldCreatures worldPollution world
 			let dayLight = if dayFraction >= 0.5 then 0 else sin (dayFraction * pi * 2)
 			let nightMasking = (1 - dayLight) / 2 /10--since it doesn't do anything
 			color (Color4 0.1 0.1 0.3 nightMasking :: Color4 GLfloat)
-			renderPrimitive Quads $ do--numX numY
+			renderPrimitive Quads $ do
 				vertex $ Vertex2 0 (0::GLfloat)
 				vertex $ Vertex2 numX (0::GLfloat)
 				vertex $ Vertex2 numX numY
