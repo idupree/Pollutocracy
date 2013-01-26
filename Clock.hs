@@ -1,4 +1,3 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
 module Clock (millisecondsNow) where
 import Data.Word (Word32)
 import System.Clock
